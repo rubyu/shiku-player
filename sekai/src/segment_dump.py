@@ -3,6 +3,10 @@
 __author__="rubyu"
 __date__ ="$2011/09/14 11:25:52$"
 
+import sys
+import codecs
+sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+
 import os
 import struct
 
@@ -21,31 +25,46 @@ def is_text(arr):
             return True
     return False
 
+def is_2byte_character(s1, s2):
+    b1 = str_to_byte(s1)
+    b2 = str_to_byte(s2)
+    #2バイト処理
+    #http://www.kanzaki.com/docs/jcode.html
+    if (129 <= b1 and b1 <= 159) or (224 <= b1 and b1 <= 239):
+        if (64 <= b2 and b2 <= 126) or (128 <= b2 and b2 <= 252):
+            return True
+    return False
+                    
+def is_control_character(s):
+    b = str_to_byte(s)
+    if 0 <= b and b <= 31:
+        return True
+    return False
+
+def to_unicode(s):
+    return unicode(s, "cp932", "ignore")
+
+def pretty(s):
+    if is_control_character(s):
+        return u"□"
+    else:
+        return to_unicode(s)
+
 def bin_decode(arr):
     if is_text(arr):
         arr = arr[2:]
     buf = []
-    last = None
-    for s in arr:
-        if last:
-            lb = str_to_byte(last)
-            b = str_to_byte(s)
-            #制御文字は潰す
-            if 0 <= lb and lb <= 31:
-                buf.append("□")
-                last = s
+    s1 = None
+    for s2 in arr:
+        if s1:
+            if is_2byte_character(s1, s2):
+                buf.append(to_unicode(s1+s2))
+                s1 = None
                 continue
-            #2バイト処理
-            #http://www.kanzaki.com/docs/jcode.html
-            if (129 <= lb and lb <= 159) or (224 <= lb and lb <= 239):
-                if (64 <= b and b <= 126) or (128 <= b and b <= 252):
-                    buf.append(unicode(last+s, "cp932", "ignore").encode("utf-8"))
-                    last = None
-                    continue
-            buf.append(unicode(last, "cp932", "ignore").encode("utf-8"))
-        last = s
-    if last:
-        buf.append(unicode(last, "cp932", "ignore").encode("utf-8"))
+            buf.append(pretty(s1))
+        s1 = s2
+    if s1:
+        buf.append(pretty(s1))
     return "".join(buf)
 
 def segment_label(buf, arr, hash):
@@ -122,6 +141,7 @@ def dump(filename):
     
 if __name__ == "__main__":    
     filename = "World.hcb"
+    #filename = "World_preview.hcb"
     #filename = "Hoshimemo_EH.hcb"
     #filename = "_HOSHIMEM.HCB"
     #filename = "Hoshimemo_EHchn.bch"

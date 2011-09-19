@@ -13,10 +13,7 @@ def int_to_hex(i):
     return ("0" + hex(i)[2:].upper())[-2:]
 
 def str_to_byte(s):
-    b = struct.unpack("B", s)
-    if 1 != len(b):
-        raise "1 != len(b)"
-    return b[0]
+    return struct.unpack("B", s)[0]
 
 def is_text(arr):
     if 2 <= len(arr):
@@ -24,32 +21,47 @@ def is_text(arr):
             return True
     return False
 
+def is_2byte_character(s1, s2):
+    b1 = str_to_byte(s1)
+    b2 = str_to_byte(s2)
+    #2バイト処理
+    #http://www.kanzaki.com/docs/jcode.html
+    if (129 <= b1 and b1 <= 159) or (224 <= b1 and b1 <= 239):
+        if (64 <= b2 and b2 <= 126) or (128 <= b2 and b2 <= 252):
+            return True
+    return False
+                    
+def is_control_character(s):
+    b = str_to_byte(s)
+    if 0 <= b and b <= 31:
+        return True
+    return False
+
+def to_unicode(s):
+    return unicode(s, "cp932", "ignore")
+
+def pretty(s):
+    if is_control_character(s):
+        return u"□"
+    else:
+        return to_unicode(s)
+    
 def decode(arr):
     if not is_text(arr):
-        raise "invalid text"        
+        raise "invalid text"
     buf = []
-    last = None
+    s1 = None
     for i in xrange(2, len(arr)):
-        s = arr[i]
-        if last:
-            lb = str_to_byte(last)
-            b = str_to_byte(s)
-            #制御文字は潰す
-            if 0 <= lb and lb <= 31:
-                buf.append("□")
-                last = s
+        s2 = arr[i]
+        if s1:
+            if is_2byte_character(s1, s2):
+                buf.append(to_unicode(s1+s2))
+                s1 = None
                 continue
-            #2バイト処理
-            #http://www.kanzaki.com/docs/jcode.html
-            if (129 <= lb and lb <= 159) or (224 <= lb and lb <= 239):
-                if (64 <= b and b <= 126) or (128 <= b and b <= 252):
-                    buf.append(unicode(last+s, "cp932", "ignore"))
-                    last = None
-                    continue
-            buf.append(unicode(last, "cp932", "ignore"))
-        last = s
-    if last:
-        buf.append(unicode(last, "cp932", "ignore"))
+            buf.append(pretty(s1))
+        s1 = s2
+    if s1:
+        buf.append(pretty(s1))
     return "".join(buf)
 
 def little_endian(arr):
@@ -99,6 +111,127 @@ def character(buf):
 #    }
     pass
 
+def head_parse(head):
+    def to_bin_array(str_arr):
+        return [str_to_byte(s) for s in str_arr]
+    def match(bin_arr, pat):
+        bl = len(bin_arr)
+        pl = len(pat)
+        if bl < pl:
+            return False
+        for i in xrange(pl):
+            if not bin_arr[i] == pat[i]:
+                return False
+        return True
+    p = 0
+    while p < len(head):
+        str_arr = head[p:]
+        bin_arr = to_bin_array(str_arr)
+        
+        if None:
+            pass
+
+        elif match(bin_arr, [0x22, 0x20, 07]):
+            # 22 20 07 XX XX XX XX
+            print buf_format(str_arr[:7])
+            p += 7
+
+        elif match(bin_arr, [0x0C, 0x01, 0x15]):
+            # 0C 01 15 XX XX
+            print buf_format(str_arr[:5])
+            p += 5
+        elif match(bin_arr, [0x0C, 0x01, 0x19]):
+            # 0C 01 19
+            print buf_format(str_arr[:3])
+            p += 3
+            
+        elif match(bin_arr, [0x0C, 0x04]):
+            # 0C 02
+            print buf_format(str_arr[:2])
+            p += 2    
+        elif match(bin_arr, [0x0C, 0x07]):
+            # 0C 02
+            print buf_format(str_arr[:2])
+            p += 2    
+        elif match(bin_arr, [0x0C, 0x02]):
+            # 0C 02
+            print buf_format(str_arr[:2])
+            p += 2
+        elif match(bin_arr, [0x0C, 0x01]):
+            # 0C 01
+            print buf_format(str_arr[:2])
+            p += 2
+        elif match(bin_arr, [0x0C, 0x00]):
+            # 0C 00
+            print buf_format(str_arr[:2])
+            p += 2
+            
+        elif match(bin_arr, [0x01]):
+            # 01 00 00
+            print buf_format(str_arr[:3])
+            p += 3
+        elif match(bin_arr, [0x02]):
+            # 02 XX XX XX
+            print buf_format(str_arr[:4])
+            p += 4
+        
+        elif match(bin_arr, [0x09]):
+            # 09 XX
+            print buf_format(str_arr[:2])
+            p += 2
+        
+        elif match(bin_arr, [0x0B]):
+            # 0B XX XX
+            print buf_format(str_arr[:3])
+            p += 3
+        
+        elif match(bin_arr, [0x0F]):
+            # 0F XX
+            print buf_format(str_arr[:2])
+            p += 2
+        
+        elif match(bin_arr, [0x08]):
+            # 08
+            print "(%s)" % buf_format(str_arr[:1])
+            p += 1
+        
+        elif match(bin_arr, [0x00]):
+            # 00
+            print "(%s)" % buf_format(str_arr[:1])
+            p += 1
+        
+        else:
+            # XX
+            print buf_format(str_arr[:1])
+            p += 1
+#        
+#        s0 = head[p0]
+#        b0 = str_to_byte(s0)
+#        if b0 == 0x01:
+#            buf = copy(head, p0, p0+3)
+#            print buf_format(buf)
+#            p0 = p0+3
+#        elif b0 == 0x02:
+#            buf = copy(head, p0, p0+4)
+#            print buf_format(buf)
+#            p0 = p0+4
+#        elif b0 == 0x0C:
+#            buf = copy(head, p0, p0+2)
+#            print buf_format(buf)
+#            p0 = p0+2
+#        elif b0 == 0x0F:
+#            buf = copy(head, p0, p0+2)
+#            print buf_format(buf)
+#            p0 = p0+2
+#        elif b0 == 0x08:
+#            buf = copy(head, p0, p0+1)
+#            print buf_format(buf)
+#            p0 = p0+1
+#        else:
+#            buf = copy(head, p0, p0+1)
+#            print buf_format(buf)
+#            p0 = p0+1
+    
 def parse_script(file, start, end):
 
     p = start
@@ -115,18 +248,111 @@ def parse_script(file, start, end):
         if end <= text_s:
             raise "segment error"
         
+        head = copy(file, p, text_s+1)
+        print "head: %s-%s:" % (p, text_s-1),
+        print "%s" % buf_format(head)
+        head_parse(head)
+        
         chara_e = text_s-1
         chara_s = chara_e-3
         chara = copy(file, chara_s, chara_e)
         
+        print "chara: %s-%s:" % (chara_s, chara_e),
+        print "%s" % buf_format(chara)
         
         text = copy(file, text_s+1, text_e)
-        print "text: %8s: %8s:" % (text_s, text_e),
+        print "text: %s-%s:" % (text_s, text_e),
         print "%s" % buf_format(text)
-        print "%s" % buf_format(chara)
         print "[%s]" % decode(text)
         p = text_e + 1
     print "-> end"
+
+def parse_script2(str_arr, start, end):
+    def to_bin_array(str_arr):
+        return [str_to_byte(s) for s in str_arr]
+    bin_arr = to_bin_array(str_arr)
+    p0 = start
+    while p0 <= end:
+        if None:
+            pass
+        
+        elif bin_arr[p0] == 0x01:
+            # 01 XX XX
+            print buf_format(str_arr[p0:p0+3])
+            p0 += 3
+        
+        elif bin_arr[p0] == 0x02:
+            # 02 XX XX XX XX
+            print buf_format(str_arr[p0:p0+5])
+            p0 += 5
+        
+        elif bin_arr[p0] == 0x06:
+            # 06 XX XX XX XX
+            print buf_format(str_arr[p0:p0+5])
+            p0 += 5
+        
+        elif bin_arr[p0] == 0x07:
+            # 07 XX XX XX XX
+            print buf_format(str_arr[p0:p0+5])
+            p0 += 5
+        
+        elif bin_arr[p0] == 0x0A:
+            # 0A XX XX XX XX
+            print buf_format(str_arr[p0:p0+5])
+            p0 += 5
+        
+        elif bin_arr[p0] == 0x0B:
+            # 0B ... (0B|0C|02|08)
+            p1 = p0
+            p1 += 1 #長さ0の場合は無い、はず
+            while p1 <= end:
+                p1 += 1
+                if  bin_arr[p1] == 0x0B or\
+                    bin_arr[p1] == 0x0C or\
+                    bin_arr[p1] == 0x02 or\
+                    bin_arr[p1] == 0x08:
+                    break
+            print buf_format(str_arr[p0:p1])
+            p0 = p1 
+        
+        elif bin_arr[p0] == 0x0C:
+            # 0C ... (0B|0C|02|08)
+            p1 = p0
+            p1 += 1 #長さ0の場合は無い、はず
+            while p1 <= end:
+                p1 += 1
+                if  bin_arr[p1] == 0x0B or\
+                    bin_arr[p1] == 0x0C or\
+                    bin_arr[p1] == 0x02 or\
+                    bin_arr[p1] == 0x08:
+                    break
+            print buf_format(str_arr[p0:p1])
+            p0 = p1 
+        
+        elif bin_arr[p0] == 0x0E:
+            # 0E ... 00
+            p1 = p0
+            while p1 <= end:
+                p1 += 1
+                if bin_arr[p1] == 0x00:
+                    break
+            buf = str_arr[p0:p1]
+            #print buf_format(buf),
+            print "[%s]" % decode(buf)
+            p1 += 1
+            p0 = p1
+
+        elif bin_arr[p0] == 0x0F:
+            # 0F XX 00
+            print buf_format(str_arr[p0:p0+3])
+            p0 += 3
+        
+        else:
+            # *
+            print buf_format(str_arr[p0:p0+1])
+            p0 += 1
+        
+        
 
 def end_adress(file):
     p = search(file, [0x00], 0)
@@ -187,16 +413,31 @@ if __name__ == "__main__":
         route[1] = int("".join(arr), 16)
         print "%s %s" % (route[0], route[1])
     
-    title = routes[0][0]
-    start = routes[0][1]
-    end = routes[1][1]
-    
-    print
-    print "%s (%s - %s)" % (title, start, end - 1)
-    
-    parse_script(file, start, end-1)
-    
-    #print file[end_adress:]
+    for i, route in enumerate(routes):
+        title = route[0]
+        start = route[1]
+        if i == len(routes) - 1:
+            end = script_end
+        else:
+            end = routes[i+1][1]
+        
+        print
+        print "%s (%s - %s)" % (title, start, end - 1)
+        
+        #parse_script(file, start, end-1)   
+        parse_script2(file, start, end-1)
+
+#    title = routes[0][0]
+#    start = routes[0][1]
+#    end = routes[1][1]
+#    
+#    print
+#    print "%s (%s - %s)" % (title, start, end - 1)
+#    
+#    #parse_script(file, start, end-1)
+#    parse_script2(file, start, end-1)
+#    
+#    #print file[end_adress:]
     
     
     
