@@ -4,9 +4,6 @@ __author__="rubyu"
 __date__ ="$2011/09/14 11:25:52$"
 
 import sys
-import codecs
-sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
-
 import struct
 
 def int_to_hex(i):
@@ -141,9 +138,9 @@ def to_bin_array(str_arr):
 
 def parse_script(str_arr, bin_arr, start, end):
     u"""
-    シナリオファイルを適当にパースし、
+    シナリオファイルをかなり適当にパースし、
     ボイスID、キャラクタ名、テキストを抽出する。
-    アーカイブ的な構造は無視してる。
+    アーカイブ的な構造は理解できなかったので無視してる。
     """
     segments = []
     p0 = start
@@ -212,6 +209,7 @@ def parse_script(str_arr, bin_arr, start, end):
             p1 = p0 + 1
         segments.append((p0, p1))
         p0 = p1
+    
     for i, segment in enumerate(segments):
         p0, p1 = segment
         #print "%7s: %7s: " % (hex(p0)[2:].upper(), hex(p1-1)[2:].upper()),
@@ -308,7 +306,7 @@ def buf_format(buf):
     """
     return " ".join([int_to_hex(str_to_byte(s)) for s in buf])
 
-if __name__ == "__main__":    
+def main():
     filename = "World.hcb"
 
     str_arr = open(filename, "rb").read()
@@ -357,4 +355,9 @@ if __name__ == "__main__":
         parse_script(str_arr, bin_arr, start, end-1)
         #break
     
+if __name__ == "__main__":    
+    import codecs
+    sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+    main()
+
     
