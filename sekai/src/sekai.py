@@ -302,29 +302,37 @@ def parse_script2(str_arr, start, end):
             p0 += 5
         
         elif bin_arr[p0] == 0x0B:
-            # 0B ... (0B|0C|02|08)
+            # 0B ... (0B|0C|02|07|08)
             p1 = p0
             p1 += 1 #長さ0の場合は無い、はず
-            while p1 <= end:
+            while p1 <= min(p0+4, end):
                 p1 += 1
-                if  bin_arr[p1] == 0x0B or\
+                if bin_arr[p1] == 0x0B or\
                     bin_arr[p1] == 0x0C or\
                     bin_arr[p1] == 0x02 or\
+                    bin_arr[p1] == 0x07 or\
                     bin_arr[p1] == 0x08:
+                    break
+                if bin_arr[p1] == 0x19:
+                    p1 += 1
                     break
             print buf_format(str_arr[p0:p1])
             p0 = p1 
         
         elif bin_arr[p0] == 0x0C:
-            # 0C ... (0B|0C|02|08)
+            # 0C ... (0B|0C|02|07|08)
             p1 = p0
             p1 += 1 #長さ0の場合は無い、はず
-            while p1 <= end:
+            while p1 <= min(p0+4, end):
                 p1 += 1
-                if  bin_arr[p1] == 0x0B or\
+                if bin_arr[p1] == 0x0B or\
                     bin_arr[p1] == 0x0C or\
                     bin_arr[p1] == 0x02 or\
+                    bin_arr[p1] == 0x07 or\
                     bin_arr[p1] == 0x08:
+                    break
+                if bin_arr[p1] == 0x19:
+                    p1 += 1
                     break
             print buf_format(str_arr[p0:p1])
             p0 = p1 
