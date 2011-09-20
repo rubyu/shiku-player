@@ -10,18 +10,33 @@ sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 import struct
 
 def int_to_hex(i):
+    u"""
+    数値を16進数の文字列に変換して返す。
+    """
     return ("0" + hex(i)[2:].upper())[-2:]
 
 def str_to_byte(s):
+    u"""
+    文字列を数値に変換して返す。
+    """
     return struct.unpack("B", s)[0]
 
 def is_text(arr):
+    u"""
+    シナリオファイル内の、正しい文字列パターンであればTrueを返す。
+    ・先頭バイト
+    ・2バイト目が文字列パターンの長さを表しているか
+    をチェックする。
+    """
     if 2 <= len(arr):
         if 0x0E == str_to_byte(arr[0]) and str_to_byte(arr[1]) == len(arr) - 1:
             return True
     return False
 
 def is_2byte_character(s1, s2):
+    u"""
+    連続するビットが、cp932の2バイト表現を満たしていればTrueを返す。
+    """
     b1 = str_to_byte(s1)
     b2 = str_to_byte(s2)
     #2バイト処理
@@ -32,21 +47,34 @@ def is_2byte_character(s1, s2):
     return False
                     
 def is_control_character(s):
+    u"""
+    コントロールキャラクタであればTrueを返す。
+    """
     b = str_to_byte(s)
     if 0 <= b and b <= 31:
         return True
     return False
 
 def to_unicode(s):
+    u"""
+    文字列をcp932だと解釈して、unicodeに変換する。
+    """
     return unicode(s, "cp932", "ignore")
 
 def pretty(s):
+    u"""
+    コントロールキャラクタを殺す。
+    """
     if is_control_character(s):
         return u"□"
     else:
         return to_unicode(s)
     
 def decode(arr):
+    u"""
+    シナリオファイル内に出現する 0x0E 長さ ~ 0x00 の文字列パターンをデコードする。
+    文字コードはcp932と解釈。
+    """
     if not is_text(arr):
         raise "invalid text"
     buf = []
@@ -65,17 +93,17 @@ def decode(arr):
     return "".join(buf)
 
 def little_endian(arr):
+    u"""
+    16進数の文字列の配列をリトルエンディアンと解釈し、数値にして返す。
+    """
     arr = [int_to_hex(str_to_byte(s)) for s in arr]
     arr.reverse()
     return int("".join(arr), 16)
 
-def copy(arr, fr, to):
-    buf = []
-    for i in xrange(fr, to):
-        buf.append(arr[i])
-    return buf
-
 def search(file, pat, fr):
+    u"""
+    文字列を、指定位置から、バイナリのパターンで検索する。
+    """
     pl = len(pat)
     al = len(file)
     flag = [False] * pl
@@ -105,203 +133,42 @@ def search(file, pat, fr):
             return i - pl + 1
     return -1
     
-def character(buf):
-#    define = {
-#        []
-#    }
-    pass
-
-def head_parse(head):
-    def to_bin_array(str_arr):
-        return [str_to_byte(s) for s in str_arr]
-    def match(bin_arr, pat):
-        bl = len(bin_arr)
-        pl = len(pat)
-        if bl < pl:
-            return False
-        for i in xrange(pl):
-            if not bin_arr[i] == pat[i]:
-                return False
-        return True
-    p = 0
-    while p < len(head):
-        str_arr = head[p:]
-        bin_arr = to_bin_array(str_arr)
-        
-        if None:
-            pass
-
-        elif match(bin_arr, [0x22, 0x20, 07]):
-            # 22 20 07 XX XX XX XX
-            print buf_format(str_arr[:7])
-            p += 7
-
-        elif match(bin_arr, [0x0C, 0x01, 0x15]):
-            # 0C 01 15 XX XX
-            print buf_format(str_arr[:5])
-            p += 5
-        elif match(bin_arr, [0x0C, 0x01, 0x19]):
-            # 0C 01 19
-            print buf_format(str_arr[:3])
-            p += 3
-            
-        elif match(bin_arr, [0x0C, 0x04]):
-            # 0C 02
-            print buf_format(str_arr[:2])
-            p += 2    
-        elif match(bin_arr, [0x0C, 0x07]):
-            # 0C 02
-            print buf_format(str_arr[:2])
-            p += 2    
-        elif match(bin_arr, [0x0C, 0x02]):
-            # 0C 02
-            print buf_format(str_arr[:2])
-            p += 2
-        elif match(bin_arr, [0x0C, 0x01]):
-            # 0C 01
-            print buf_format(str_arr[:2])
-            p += 2
-        elif match(bin_arr, [0x0C, 0x00]):
-            # 0C 00
-            print buf_format(str_arr[:2])
-            p += 2
-            
-        elif match(bin_arr, [0x01]):
-            # 01 00 00
-            print buf_format(str_arr[:3])
-            p += 3
-        elif match(bin_arr, [0x02]):
-            # 02 XX XX XX
-            print buf_format(str_arr[:4])
-            p += 4
-        
-        elif match(bin_arr, [0x09]):
-            # 09 XX
-            print buf_format(str_arr[:2])
-            p += 2
-        
-        elif match(bin_arr, [0x0B]):
-            # 0B XX XX
-            print buf_format(str_arr[:3])
-            p += 3
-        
-        elif match(bin_arr, [0x0F]):
-            # 0F XX
-            print buf_format(str_arr[:2])
-            p += 2
-        
-        elif match(bin_arr, [0x08]):
-            # 08
-            print "(%s)" % buf_format(str_arr[:1])
-            p += 1
-        
-        elif match(bin_arr, [0x00]):
-            # 00
-            print "(%s)" % buf_format(str_arr[:1])
-            p += 1
-        
-        else:
-            # XX
-            print buf_format(str_arr[:1])
-            p += 1
-#        
-#        s0 = head[p0]
-#        b0 = str_to_byte(s0)
-#        if b0 == 0x01:
-#            buf = copy(head, p0, p0+3)
-#            print buf_format(buf)
-#            p0 = p0+3
-#        elif b0 == 0x02:
-#            buf = copy(head, p0, p0+4)
-#            print buf_format(buf)
-#            p0 = p0+4
-#        elif b0 == 0x0C:
-#            buf = copy(head, p0, p0+2)
-#            print buf_format(buf)
-#            p0 = p0+2
-#        elif b0 == 0x0F:
-#            buf = copy(head, p0, p0+2)
-#            print buf_format(buf)
-#            p0 = p0+2
-#        elif b0 == 0x08:
-#            buf = copy(head, p0, p0+1)
-#            print buf_format(buf)
-#            p0 = p0+1
-#        else:
-#            buf = copy(head, p0, p0+1)
-#            print buf_format(buf)
-#            p0 = p0+1
-    
-def parse_script(file, start, end):
-
-    p = start
-    while p <= end:
-        #print "p -> %s" % p
-        text_s = search(file, [0x00, 0x0E], p)
-        if -1 == end:
-            break
-        if end <= text_s:
-            break
-        text_e = search(file, [0x00], text_s+1)
-        if -1 == text_e:
-            raise "segment error"
-        if end <= text_s:
-            raise "segment error"
-        
-        head = copy(file, p, text_s+1)
-        print "head: %s-%s:" % (p, text_s-1),
-        print "%s" % buf_format(head)
-        head_parse(head)
-        
-        chara_e = text_s-1
-        chara_s = chara_e-3
-        chara = copy(file, chara_s, chara_e)
-        
-        print "chara: %s-%s:" % (chara_s, chara_e),
-        print "%s" % buf_format(chara)
-        
-        text = copy(file, text_s+1, text_e)
-        print "text: %s-%s:" % (text_s, text_e),
-        print "%s" % buf_format(text)
-        print "[%s]" % decode(text)
-        p = text_e + 1
-    print "-> end"
-
 def to_bin_array(str_arr):
+    u"""
+    文字列を1バイトづつ解釈し、数値の配列として返す。
+    """
     return [str_to_byte(s) for s in str_arr]
 
-def parse_script2(str_arr, bin_arr, start, end):
+def parse_script(str_arr, bin_arr, start, end):
+    u"""
+    シナリオファイルを適当にパースし、
+    ボイスID、キャラクタ名、テキストを抽出する。
+    アーカイブ的な構造は無視してる。
+    """
+    segments = []
     p0 = start
     p1 = None
-    memo = None
     while p0 <= end:
-        if None:
-            pass
-        
-        elif bin_arr[p0] == 0x01:
+        if bin_arr[p0] == 0x01:
             # 01 XX XX
             p1 = p0 + 3
-            
         elif bin_arr[p0] == 0x02:
             # 02 XX XX XX XX
             p1 = p0 + 5
-            
         elif bin_arr[p0] == 0x06:
             # 06 XX XX XX XX
             p1 = p0 + 5
-            
         elif bin_arr[p0] == 0x07:
             # 07 XX XX XX XX
             p1 = p0 + 5
-            
         elif bin_arr[p0] == 0x0A:
             # 0A XX XX XX XX
             p1 = p0 + 5
-            
         elif bin_arr[p0] == 0x0B:
             # 0B ... (0B|0C|02|07|08)
+            # 0B .. 19
             p1 = p0
-            p1 += 1 #長さ0の場合は無い、はず
+            p1 += 2 #長さ2以下の場合は無い、はず
             while p1 <= min(p0+4, end):
                 p1 += 1
                 if bin_arr[p1] == 0x0B or\
@@ -313,11 +180,11 @@ def parse_script2(str_arr, bin_arr, start, end):
                 if bin_arr[p1] == 0x19:
                     p1 += 1
                     break
-            
         elif bin_arr[p0] == 0x0C:
             # 0C ... (0B|0C|02|07|08)
+            # 0C .. 19
             p1 = p0
-            p1 += 1 #長さ0の場合は無い、はず
+            p1 += 1 #長さ1以下の場合は無い、はず
             while p1 <= min(p0+4, end):
                 p1 += 1
                 if bin_arr[p1] == 0x0B or\
@@ -329,7 +196,6 @@ def parse_script2(str_arr, bin_arr, start, end):
                 if bin_arr[p1] == 0x19:
                     p1 += 1
                     break
-        
         elif bin_arr[p0] == 0x0E:
             # 0E ... 00
             p1 = p0
@@ -337,33 +203,109 @@ def parse_script2(str_arr, bin_arr, start, end):
                 p1 += 1
                 if bin_arr[p1] == 0x00:
                     break
-            memo = "[%s]" % decode(str_arr[p0:p1])
             p1 += 1
-
         elif bin_arr[p0] == 0x0F:
             # 0F XX 00
             p1 = p0 + 3
-
         else:
             # *
             p1 = p0 + 1
-        
-        print "%7s: %7s: " % (hex(p0)[2:].upper(), hex(p1-1)[2:].upper()),
-        print buf_format(str_arr[p0:p1])
-        if memo:
-            print memo
-            memo = None
+        segments.append((p0, p1))
         p0 = p1
-        
+    for i, segment in enumerate(segments):
+        p0, p1 = segment
+        #print "%7s: %7s: " % (hex(p0)[2:].upper(), hex(p1-1)[2:].upper()),
+        #print buf_format(str_arr[p0:p1])
+        if bin_arr[p0] == 0x0E:
+            cid_p = segments[i-1]
+            cid = bin_arr[cid_p[0]:cid_p[1]]
+            cname = cid_to_cname(cid)
+            if cname:
+                print "[%s]" % cname,
+            if cname and \
+                cname != u"悠馬":
+                j = i - 1
+                while i - 5 < j:
+                    j += -1
+                    vid_p = segments[j]
+                    tmp = bin_arr[vid_p[0]:vid_p[1]]
+                    if tmp == [0x08] or \
+                        (0x0C == tmp[0] and tmp[1] < 0x0A):
+                        continue
+                    vid = str_arr[vid_p[0]:vid_p[1]]
+                    vid_int = little_endian(vid[1:])
+                    print "[%s]" % vid_int,
+                    break
+            print "[%s]" % decode(str_arr[p0:p1-1])
+            
+def cid_to_cname(cid):
+    u"""
+    キャラクターの識別子に合致していれば、対応するキャラクター名を返す。
+    対応するものがなければ""を返す。
+    """
+    if cid == [0x02, 0x04, 0x00, 0x00, 0x00]:
+        return u"真紅"
+    if cid == [0x02, 0x3D, 0x13, 0x00, 0x00]:
+        return u"悠馬"
+    if cid == [0x02, 0xC3, 0x0D, 0x00, 0x00]:
+        return u"時雨"
+    if cid == [0x02, 0x24, 0x01, 0x00, 0x00]:
+        return u"加奈"
+    if cid == [0x02, 0xDB, 0x07, 0x00, 0x00]:
+        return u"蓮"
+    if cid == [0x02, 0x00, 0x0C, 0x00, 0x00]:
+        return u"あゆむ"
+    if cid == [0x02, 0x32, 0x03, 0x00, 0x00]:
+        return u"澪"
+    if cid == [0x02, 0x05, 0x05, 0x00, 0x00]:
+        return u"鏡"
+    if cid == [0x02, 0x01, 0x0A, 0x00, 0x00]:
+        return u"鈴"
+    if cid == [0x02, 0x45, 0x06, 0x00, 0x00]:
+        return u"つかさ"
+    if cid == [0x02, 0x25, 0x11, 0x00, 0x00]:
+        return u"お母さん"
+    if cid == [0x02, 0xEE, 0x08, 0x00, 0x00]:
+        return u"白"
+    if cid == [0x02, 0xF5, 0x04, 0x00, 0x00]:
+        return u"澪　&　悠馬"
+    if cid == [0x02, 0xE1, 0x0E, 0x00, 0x00]:
+        return u"担任教師"
+    if cid == [0x02, 0x17, 0x12, 0x00, 0x00]:
+        return u"祟り"
+    if cid == [0x02, 0x37, 0x0F, 0x00, 0x00]:
+        return u"女の子"
+    if cid == [0x02, 0x9E, 0x11, 0x00, 0x00]:
+        return u"藍"
+    if cid == [0x02, 0xB0, 0x0F, 0x00, 0x00]:
+        return u"祖母"
+    if cid == [0x02, 0xC4, 0x12, 0x00, 0x00]:
+        return u"蓮也"
+    if cid == [0x02, 0x29, 0x10, 0x00, 0x00]:
+        return u"とおる"
 
+#    if 5 == len(cid) and \
+#        0x02 == cid[0] and \
+#        cid[2] < 0x20 and \
+#        0x00 == cid[3] and \
+#        0x00 == cid[4]:
+#        return u"maybe valid cid, but not defined"
+
+    return ""
+    
 def end_adress(file):
+    u"""
+    ファイルの先頭をチェックして、終了位置を返す。
+    """
     p = search(file, [0x00], 0)
     if -1 != p:
-        buf = copy(file, 0, p)
-        return little_endian(buf)
+        return little_endian(file[:p])
     raise "error"
 
 def buf_format(buf):
+    u"""
+    文字列を1バイトづつ、16進数に変換し、空白を挟んだフォーマットで返す。
+    """
     return " ".join([int_to_hex(str_to_byte(s)) for s in buf])
 
 if __name__ == "__main__":    
@@ -374,22 +316,9 @@ if __name__ == "__main__":
     filesize = len(str_arr)    
     print "filename: %s" % filename
     print "filesize: %s" % filesize
-
     script_end = end_adress(str_arr)
     print "script_end: %s" % script_end
-    
-#    buf, p = find(file, 0x00, p+1)
-#    print_buf(buf)
-#    
-#    buf, p = copy(file, p+1, 12)
-#    print_buf(buf)
-#    
-#    p += 1
-#    
-#    buf, p = find(file, 0x00, p+1)
-#    print_buf(buf)
-#    
-    
+    print
     routes = [
         [ u"共通ルート１章",       "FC 31 07", ],
         [ u"共通ルート２章",       "41 1C 09", ],
@@ -423,26 +352,9 @@ if __name__ == "__main__":
             end = script_end
         else:
             end = routes[i+1][1]
-        
         print
         print "%s (%s - %s)" % (title, start, end - 1)
-        
-        #parse_script(file, start, end-1)   
-        parse_script2(str_arr, bin_arr, start, end-1)
-        break
-        
-#    title = routes[0][0]
-#    start = routes[0][1]
-#    end = routes[1][1]
-#    
-#    print
-#    print "%s (%s - %s)" % (title, start, end - 1)
-#    
-#    #parse_script(file, start, end-1)
-#    parse_script2(file, start, end-1)
-#    
-#    #print file[end_adress:]
-    
-    
+        parse_script(str_arr, bin_arr, start, end-1)
+        #break
     
     
