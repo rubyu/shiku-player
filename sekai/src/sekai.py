@@ -267,40 +267,37 @@ def parse_script(file, start, end):
         p = text_e + 1
     print "-> end"
 
-def parse_script2(str_arr, start, end):
-    def to_bin_array(str_arr):
-        return [str_to_byte(s) for s in str_arr]
-    bin_arr = to_bin_array(str_arr)
+def to_bin_array(str_arr):
+    return [str_to_byte(s) for s in str_arr]
+
+def parse_script2(str_arr, bin_arr, start, end):
     p0 = start
+    p1 = None
+    memo = None
     while p0 <= end:
         if None:
             pass
         
         elif bin_arr[p0] == 0x01:
             # 01 XX XX
-            print buf_format(str_arr[p0:p0+3])
-            p0 += 3
-        
+            p1 = p0 + 3
+            
         elif bin_arr[p0] == 0x02:
             # 02 XX XX XX XX
-            print buf_format(str_arr[p0:p0+5])
-            p0 += 5
-        
+            p1 = p0 + 5
+            
         elif bin_arr[p0] == 0x06:
             # 06 XX XX XX XX
-            print buf_format(str_arr[p0:p0+5])
-            p0 += 5
-        
+            p1 = p0 + 5
+            
         elif bin_arr[p0] == 0x07:
             # 07 XX XX XX XX
-            print buf_format(str_arr[p0:p0+5])
-            p0 += 5
-        
+            p1 = p0 + 5
+            
         elif bin_arr[p0] == 0x0A:
             # 0A XX XX XX XX
-            print buf_format(str_arr[p0:p0+5])
-            p0 += 5
-        
+            p1 = p0 + 5
+            
         elif bin_arr[p0] == 0x0B:
             # 0B ... (0B|0C|02|07|08)
             p1 = p0
@@ -316,9 +313,7 @@ def parse_script2(str_arr, start, end):
                 if bin_arr[p1] == 0x19:
                     p1 += 1
                     break
-            print buf_format(str_arr[p0:p1])
-            p0 = p1 
-        
+            
         elif bin_arr[p0] == 0x0C:
             # 0C ... (0B|0C|02|07|08)
             p1 = p0
@@ -334,8 +329,6 @@ def parse_script2(str_arr, start, end):
                 if bin_arr[p1] == 0x19:
                     p1 += 1
                     break
-            print buf_format(str_arr[p0:p1])
-            p0 = p1 
         
         elif bin_arr[p0] == 0x0E:
             # 0E ... 00
@@ -344,22 +337,23 @@ def parse_script2(str_arr, start, end):
                 p1 += 1
                 if bin_arr[p1] == 0x00:
                     break
-            buf = str_arr[p0:p1]
-            #print buf_format(buf),
-            print "[%s]" % decode(buf)
+            memo = "[%s]" % decode(str_arr[p0:p1])
             p1 += 1
-            p0 = p1
 
         elif bin_arr[p0] == 0x0F:
             # 0F XX 00
-            print buf_format(str_arr[p0:p0+3])
-            p0 += 3
-        
+            p1 = p0 + 3
+
         else:
             # *
-            print buf_format(str_arr[p0:p0+1])
-            p0 += 1
+            p1 = p0 + 1
         
+        print "%7s: %7s: " % (hex(p0)[2:].upper(), hex(p1-1)[2:].upper()),
+        print buf_format(str_arr[p0:p1])
+        if memo:
+            print memo
+            memo = None
+        p0 = p1
         
 
 def end_adress(file):
@@ -375,12 +369,13 @@ def buf_format(buf):
 if __name__ == "__main__":    
     filename = "World.hcb"
 
-    file = open(filename, "rb").read()
-    filesize = len(file)    
+    str_arr = open(filename, "rb").read()
+    bin_arr = to_bin_array(str_arr)
+    filesize = len(str_arr)    
     print "filename: %s" % filename
     print "filesize: %s" % filesize
 
-    script_end = end_adress(file)
+    script_end = end_adress(str_arr)
     print "script_end: %s" % script_end
     
 #    buf, p = find(file, 0x00, p+1)
@@ -433,8 +428,9 @@ if __name__ == "__main__":
         print "%s (%s - %s)" % (title, start, end - 1)
         
         #parse_script(file, start, end-1)   
-        parse_script2(file, start, end-1)
-
+        parse_script2(str_arr, bin_arr, start, end-1)
+        break
+        
 #    title = routes[0][0]
 #    start = routes[0][1]
 #    end = routes[1][1]
