@@ -4,19 +4,10 @@ __author__="rubyu"
 __date__ ="$2011/09/14 11:25:52$"
 
 import sys
-import struct
 
-def int_to_hex(i):
-    u"""
-    数値を16進数の文字列に変換して返す。
-    """
-    return ("0" + hex(i)[2:].upper())[-2:]
-
-def str_to_byte(s):
-    u"""
-    文字列を数値に変換して返す。
-    """
-    return struct.unpack("B", s)[0]
+from file_utils \
+    import from_little_endian, byte_int, is_cp932_2byte_char, \
+            from_cp932, pretty, byte_array
 
 def is_text(arr):
     u"""
@@ -26,115 +17,31 @@ def is_text(arr):
     をチェックする。
     """
     if 2 <= len(arr):
-        if 0x0E == str_to_byte(arr[0]) and str_to_byte(arr[1]) == len(arr) - 1:
+        if 0x0E == byte_int(arr[0]) and byte_int(arr[1]) == len(arr) - 1:
             return True
     return False
 
-def is_2byte_character(s1, s2):
-    u"""
-    連続するビットが、cp932の2バイト表現を満たしていればTrueを返す。
-    """
-    b1 = str_to_byte(s1)
-    b2 = str_to_byte(s2)
-    #2バイト処理
-    #http://www.kanzaki.com/docs/jcode.html
-    if (129 <= b1 and b1 <= 159) or (224 <= b1 and b1 <= 239):
-        if (64 <= b2 and b2 <= 126) or (128 <= b2 and b2 <= 252):
-            return True
-    return False
-                    
-def is_control_character(s):
-    u"""
-    コントロールキャラクタであればTrueを返す。
-    """
-    b = str_to_byte(s)
-    if 0 <= b and b <= 31:
-        return True
-    return False
-
-def to_unicode(s):
-    u"""
-    文字列をcp932だと解釈して、unicodeに変換する。
-    """
-    return unicode(s, "cp932", "ignore")
-
-def pretty(s):
-    u"""
-    コントロールキャラクタを殺す。
-    """
-    if is_control_character(s):
-        return u"□"
-    else:
-        return to_unicode(s)
-    
 def decode(arr):
     u"""
     シナリオファイル内に出現する 0x0E 長さ ~ 0x00 の文字列パターンをデコードする。
     文字コードはcp932と解釈。
     """
     if not is_text(arr):
-        raise "invalid text"
+        raise ValueError("invalid text")
     buf = []
     s1 = None
     for i in xrange(2, len(arr)):
         s2 = arr[i]
         if s1:
-            if is_2byte_character(s1, s2):
-                buf.append(to_unicode(s1+s2))
+            if is_cp932_2byte_char(s1, s2):
+                buf.append(from_cp932(s1+s2))
                 s1 = None
                 continue
-            buf.append(pretty(s1))
+            buf.append(from_cp932(pretty(s1, u"□")))
         s1 = s2
     if s1:
-        buf.append(pretty(s1))
+        buf.append(from_cp932(pretty(s1, u"□")))
     return "".join(buf)
-
-def little_endian(arr):
-    u"""
-    16進数の文字列の配列をリトルエンディアンと解釈し、数値にして返す。
-    """
-    arr = [int_to_hex(str_to_byte(s)) for s in arr]
-    arr.reverse()
-    return int("".join(arr), 16)
-
-def search(file, pat, fr):
-    u"""
-    文字列を、指定位置から、バイナリのパターンで検索する。
-    """
-    pl = len(pat)
-    al = len(file)
-    flag = [False] * pl
-    def f_clear():
-        for i in xrange(pl):
-            flag[i] = False
-    def f_ok():
-        for f in flag:
-            if not f:
-                return False
-        return True
-    for i in xrange(fr, al):
-        s = file[i]
-        b = str_to_byte(s)
-        #print "search-> %s %s %s" % (i, flag, int_to_hex(b))
-        for j in xrange(pl):
-            if flag[j] == True:
-                continue
-            if pat[j] == b:
-                flag[j] = True
-            else:
-                f_clear()
-                if pat[0] == b:
-                    flag[0] = True
-            break
-        if f_ok():
-            return i - pl + 1
-    return -1
-    
-def to_bin_array(str_arr):
-    u"""
-    文字列を1バイトづつ解釈し、数値の配列として返す。
-    """
-    return [str_to_byte(s) for s in str_arr]
 
 def parse_script(str_arr, bin_arr, start, end):
     u"""
@@ -231,7 +138,7 @@ def parse_script(str_arr, bin_arr, start, end):
                         (0x0C == tmp[0] and tmp[1] < 0x0A):
                         continue
                     vid = str_arr[vid_p[0]:vid_p[1]]
-                    vid_int = little_endian(vid[1:])
+                    vid_int = from_little_endian(vid[1:])
                     print "[%s]" % vid_int,
                     break
             print "[%s]" % decode(str_arr[p0:p1-1])
@@ -295,28 +202,19 @@ def end_adress(file):
     u"""
     ファイルの先頭をチェックして、終了位置を返す。
     """
-    p = search(file, [0x00], 0)
-    if -1 != p:
-        return little_endian(file[:p])
-    raise "error"
-
-def buf_format(buf):
-    u"""
-    文字列を1バイトづつ、16進数に変換し、空白を挟んだフォーマットで返す。
-    """
-    return " ".join([int_to_hex(str_to_byte(s)) for s in buf])
+    return from_little_endian(file[:3])
 
 def main():
     filename = "World.hcb"
-
     str_arr = open(filename, "rb").read()
-    bin_arr = to_bin_array(str_arr)
-    filesize = len(str_arr)    
-    print "filename: %s" % filename
-    print "filesize: %s" % filesize
+    byte_arr = byte_array(str_arr)
     script_end = end_adress(str_arr)
+    
+    print "filename: %s" % filename
+    print "filesize: %s" % len(str_arr) 
     print "script_end: %s" % script_end
     print
+    
     routes = [
         [ u"共通ルート１章",       "FC 31 07", ],
         [ u"共通ルート２章",       "41 1C 09", ],
@@ -352,7 +250,7 @@ def main():
             end = routes[i+1][1]
         print
         print "%s (%s - %s)" % (title, start, end - 1)
-        parse_script(str_arr, bin_arr, start, end-1)
+        parse_script(str_arr, byte_arr, start, end-1)
         #break
     
 if __name__ == "__main__":    

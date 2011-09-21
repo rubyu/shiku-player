@@ -5,27 +5,9 @@ __date__ ="$2011/09/20 17:41:44$"
 
 import os
 import logging
-import struct
 
-def int_to_hex(i):
-    u"""
-    数値を16進数の文字列に変換して返す。
-    """
-    return ("0" + hex(i)[2:].upper())[-2:]
+from file_utils import from_little_endian
 
-def str_to_byte(s):
-    u"""
-    文字列を数値に変換して返す。
-    """
-    return struct.unpack("B", s)[0]
-
-def little_endian(arr):
-    u"""
-    16進数の文字列の配列をリトルエンディアンと解釈し、数値にして返す。
-    """
-    arr = [int_to_hex(str_to_byte(s)) for s in arr]
-    arr.reverse()
-    return int("".join(arr), 16)
 
 class Voice:
     u"""
@@ -45,15 +27,15 @@ class Voice:
     EOF
     """
     def __init__(self, path):
-        if not os.path.isfile(path):
-            raise IOError()
         self.path = path
         logging.info("Voice: path=%s", self.path)
+        if not os.path.isfile(path):
+            raise IOError()
         self.file = open(self.path, "rb")
         self._parse()
         
     def _read_int(self):
-        return little_endian(self.file.read(4))
+        return from_little_endian(self.file.read(4))
     
     def _read_str(self, n):
         return self.file.read(n)
@@ -96,6 +78,7 @@ class Voice:
             logging.info("get: %s adress=%s length=%s", id, adress, length)
             return self._read_str(length)
         raise KeyError()
+        
         
 def main():
     voice = Voice("/home/rubyu/Documents/voice.bin")
