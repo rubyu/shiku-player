@@ -29,11 +29,11 @@ def from_little_endian(str):
     return int("".join(arr), 16)
 
 
-def byte_array(str_array):
+def byte_array(str):
     u"""
     文字列を1バイトづつ解釈し、数値の配列として返す。
     """
-    return [byte_int(s) for s in str_array]
+    return [byte_int(s) for s in str]
 
 
 def is_cp932_2byte_char(s1, s2):
@@ -73,11 +73,11 @@ def pretty(s, replace):
     else:
         return s
     
-def hex_format(buf):
+def hex_format(str):
     u"""
     文字列を1バイトづつ、16進数に変換し、空白を挟んだフォーマットで返す。
     """
-    return " ".join([hex_str(byte_int(s)) for s in buf])
+    return " ".join([hex_str(byte_int(s)) for s in str])
 
 def search(file, pat, fr):
     u"""

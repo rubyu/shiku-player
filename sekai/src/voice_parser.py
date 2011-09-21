@@ -5,10 +5,12 @@ __date__ ="$2011/09/20 17:41:44$"
 
 import os
 import logging
-
-from file_utils import from_little_endian
-
-
+from file_utils \
+    import from_little_endian
+from defs \
+    import VOICE_FILE
+    
+    
 class Voice:
     u"""
     ボイスデータのパーサ。
@@ -81,9 +83,10 @@ class Voice:
         
         
 def main():
-    voice = Voice("/home/rubyu/Documents/voice.bin")
-    file = open("/home/rubyu/Documents/voice.bin.temp.ogg", "wb")
-    file.write(voice.get("00000050"))
+    voice = Voice(VOICE_FILE)
+    vid = "toiku_ayumu"
+    temp = open(os.path.join(os.path.split(VOICE_FILE)[0], "voice.bin.%s.ogg" % vid), "wb")
+    temp.write(voice.get(vid))
 
 if __name__ == "__main__":
     logging.basicConfig(
