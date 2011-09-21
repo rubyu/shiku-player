@@ -28,14 +28,27 @@ class Voice:
     〜データ〜
     EOF
     """
+    _cls_ver = 0
     def __init__(self, path):
+        self._ins_ver = self._cls_ver
         self.path = path
         logging.info("Voice: path=%s", self.path)
         if not os.path.isfile(path):
             raise IOError()
         self.file = open(self.path, "rb")
         self._parse()
-        
+    
+    def __getstate__(self):
+        dict = self.__dict__.copy()
+        del dict["file"]
+        return dict
+    
+    def __setstate__(self, dict):
+        self.__dict__.update(dict)
+        if self._ins_ver != self._cls_ver:
+            raise ValueError() 
+        self.file = open(self.path, "rb")
+    
     def _read_int(self):
         return from_little_endian(self.file.read(4))
     

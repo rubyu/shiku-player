@@ -14,7 +14,10 @@ from defs \
             
 class Script:
     
+    _cls_ver = 0
+    
     def __init__(self, path):
+        self._ins_ver = self._cls_ver
         self.path = path
         logging.info("Script: path=%s", self.path)
         if not os.path.isfile(path):
@@ -56,7 +59,15 @@ class Script:
             self.titles.append(title)
             self.texts[title] = self._parse(str_arr, byte_arr, start, end-1)
         logging.debug("done.")
-            
+    
+    def __getstate__(self):
+        return self.__dict__.copy()
+    
+    def __setstate__(self, dict):
+        self.__dict__.update(dict)
+        if self._ins_ver != self._cls_ver:
+            raise ValueError() 
+    
     def _is_text(self, arr):
         u"""
         シナリオファイル内の、正しい文字列パターンであればTrueを返す。
