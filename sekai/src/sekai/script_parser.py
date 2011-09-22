@@ -3,8 +3,10 @@
 __author__="rubyu"
 __date__ ="$2011/09/20 21:01:15$"
 
-import os
 import logging
+import os
+import sys
+from optparse import OptionParser
 import cPickle as _pickle
 
 from file_utils \
@@ -72,11 +74,11 @@ class Script:
     def restore_or_create(cls, path, dump):
         try:
             ins = _pickle.load(open(dump, "rb"))
-            logging.debug("restore from %s", dump)
+            logging.debug("Script restored from %s", dump)
         except:
             ins = cls(path)
             _pickle.dump(ins, open(dump, "wb"))
-            logging.debug("dump to %s", dump)
+            logging.debug("Script dumped to %s", dump)
         return ins
     
     def _is_text(self, arr):
@@ -284,18 +286,30 @@ class Script:
         return from_little_endian(file[:3])
 
 def main():
-    from defs \
-        import SCRIPT_FILE
-    script = Script(SCRIPT_FILE)
+    sys.argv.append("--path=/tmp/sekai/World.hcb")
+    parser = OptionParser("usage: script_parser.py --path=to_World.hcb")
+    parser.add_option(
+        "-p", 
+        "--path",
+        type="string",
+        help="file path to World.hcb."
+    )
+    options = parser.parse_args()[0]
+    
+    if not options.path:
+        parser.print_help()
+        sys.exit(-1)
+        
+    script = Script(options.path)
     for title in script.titles:
         for text in script.texts[title]:
-            print "%s: %s: %s" % tuple(text)
+            str, name, vid = text
+            if name:
+                print u"%s「%s」" % (name, str)
+            else:
+                print str
     
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
-    )
     import sys
     import codecs
     sys.stdout = codecs.getwriter('utf_8')(sys.stdout)

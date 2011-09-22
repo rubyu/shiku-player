@@ -3,8 +3,10 @@
 __author__="rubyu"
 __date__ ="$2011/09/20 17:41:44$"
 
-import os
 import logging
+import os
+import sys
+from optparse import OptionParser
 import cPickle as _pickle
 
 from file_utils \
@@ -55,11 +57,11 @@ class Voice:
     def restore_or_create(cls, path, dump):
         try:
             ins = _pickle.load(open(dump, "rb"))
-            logging.debug("restore from %s", dump)
+            logging.debug("Voice restored from %s", dump)
         except:
             ins = cls(path)
             _pickle.dump(ins, open(dump, "wb"))
-            logging.debug("dump to %s", dump)
+            logging.debug("Voice dumped to %s", dump)
         return ins
     
     def _read_int(self):
@@ -109,16 +111,49 @@ class Voice:
         
         
 def main():
-    from defs \
-        import VOICE_FILE
-    voice = Voice(VOICE_FILE)
-    vid = "toiku_ayumu"
-    temp = open(os.path.join(os.path.split(VOICE_FILE)[0], "voice.bin.%s.ogg" % vid), "wb")
-    temp.write(voice.get(vid))
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
+    #sys.argv.append("--path=/tmp/sekai/voice.bin")
+    #sys.argv.append("--list")
+    #sys.argv.append("--id=00000350")
+    parser = OptionParser(
+        "usage: script_parser.py --path=to_voice.bin --extract=voice_id --list")
+    parser.add_option(
+        "-p", 
+        "--path",
+        type="string",
+        help="file path to voice.bin."
+    )
+    parser.add_option(
+        "-i", 
+        "--id",
+        type="string",
+        help="voice ID to extract."
+    )
+    parser.add_option(
+        "-l", 
+        "--list",
+        action="store_true",
+        default=False,
+        help="print list of Voice ID."
     )    
+    options = parser.parse_args()[0]
+    
+    if not options.path:
+        parser.print_help()
+        sys.exit(-1)
+    
+    voice = Voice(options.path)
+    if options.list:
+        for key in sorted(voice.dict.keys()):
+            print key
+        sys.exit()
+    if options.id:
+        if options.id in voice.dict:
+            temp_path = os.path.join(os.path.split(options.path)[0], "%s.ogg" % options.id)
+            temp = open(temp_path, "wb")
+            temp.write(voice.get(options.id))
+        else:
+            print "Invalid Voice ID!"
+        sys.exit()
+        
+if __name__ == "__main__":
     main()

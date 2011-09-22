@@ -9,27 +9,43 @@ logging.basicConfig(
     format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
 )
 
+import os
+import sys
+from optparse import OptionParser
+import cPickle as _pickle
 import re
 import json
-    
+
 from flask \
-    import Flask, make_response, render_template, redirect, url_for
+    import Flask, make_response, render_template
 app = Flask(__name__)
 
 from sekai.voice_parser import Voice
 from sekai.script_parser import Script
-from sekai.defs \
-    import VOICE_FILE, SCRIPT_FILE
 
-voice = Voice.restore_or_create(VOICE_FILE, "voice.p")
-script = Script.restore_or_create(SCRIPT_FILE, "script.p")
+voice = None
+script = None
 
+def save(obj, dump):
+    try:
+        _pickle.dump(obj, open(dump, "wb"))
+    except:
+        pass
+def restore(dump):
+    try:
+        return _pickle.load(open(dump, "rb"))
+    except:
+        pass
+    
 @app.route("/")
 def show_root():
     return render_template("index.html")
 
 @app.route("/query/json/")
 def query_json_():
+    u"""
+    これは綺麗じゃないと思うんだが、解決法がよくわからない。
+    """
     return query_json("")
 
 @app.route("/query/json/<keyword>")
@@ -73,6 +89,38 @@ def html_ruby(str):
     return ruby_pat.sub(r"<ruby>\2<rt>\1</rt></ruby>", str)
 
 def main():
+    parser = OptionParser("usage: shinku_player.py --path=game_installed")
+    parser.add_option(
+        "-p", 
+        "--path",
+        type="string",
+        help="Directory that the game installed."
+    )
+    options = parser.parse_args()[0]
+    
+    if options.path:
+        save({"path": options.path}, "gconfig.p")
+        logging.debug("path(%s) saved to gconfig.p" % options.path)
+    
+    gconfig = restore("gconfig.p")
+    if not gconfig:
+        parser.error("path is not given!")
+        sys.exit()
+    path = gconfig["path"]
+    voice_path = os.path.join(path, "voice.bin")
+    script_path = os.path.join(path, "World.hcb")
+    if not os.path.isdir(path) or \
+       not os.path.isfile(voice_path) or \
+       not os.path.isfile(script_path):
+        parser.error("'voice.bin' and 'World.hcb' is needed!")
+        sys.exit()
+    
+    logging.info("path restored from gconfig.p: %s" % path)
+    global voice
+    global script
+    voice = Voice.restore_or_create(voice_path, "voice.p")
+    script = Script.restore_or_create(script_path, "script.p")
+    
     app.debug = True
     app.run()
 
