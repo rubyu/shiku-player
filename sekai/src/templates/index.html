@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8" />
+		<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+		Remove this if you use the .htaccess -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<title>player</title>
+		<meta name="description" content="" />
+		<meta name="author" content="" />
+		<meta name="viewport" content="width=device-width; initial-scale=1.0" />
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="stylesheet" href="static/player.css" />
+                <script type="text/javascript" src="static/jquery-1.6.4.min.js"></script>
+<script type="text/javascript">
+
+if (window.console && window.console.log) {
+    var log = function(m) {
+        window.console.log(m);
+    }
+} else {
+    var log = function() {}
+}
+
+//http://jquery-howto.blogspot.com/2009/09/get-url-parameters-values-with-jquery.html
+$.extend({
+  getUrlVars: function(){
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+      hash = hashes[i].split('=');
+      vars.push(hash[0]);
+      vars[hash[0]] = decodeURIComponent(hash[1]);
+    }
+    return vars;
+  },
+  getUrlVar: function(name){
+    return $.getUrlVars()[name];
+  }
+});
+
+function Player() {
+    this.initialize.apply(this, arguments);
+}
+Player.prototype = {
+    initialize: function(talks, textObj, statusObj) {
+        _this = this;
+        this._talks = talks;
+        this._textObj = textObj;
+        this._statusObj = statusObj;
+        this._cursor = 0;
+        this._audio = new Audio();
+        this._playing = false;
+        
+        $(this._statusObj).click(function(){
+           if (_this._playing) {
+               _this.stop();
+           } else {
+               _this.start();
+           }
+        });
+    },
+    _cursorNext: function() {
+       if (this._talks.length - 1 == this._cursor) {
+            this._cursor = 0;
+       } else {
+            this._cursor ++;
+       }
+    },
+    start: function() {
+        if (this._playing) {
+            log("start() is called when 'playing'.");
+            return;
+        }
+        if (0 == this._talks.length) {
+            log("Nothing to play.")
+            $(this._textObj).text("それは本当に私が言ったことなのか？");
+            return;
+        }
+        this._playing = true;
+        this._play();
+        log("Player started.");
+        $(this._statusObj).text("playing");
+    },
+    stop: function() {
+        if (!this._playing) {
+            log("stop() is called when 'stopped'.");
+            return;
+        }
+        this._playing = false;
+        this._audio.pause();
+        log("Player stopped.");
+        $(this._statusObj).text("stopped");
+    },
+    _play: function() {
+        _this = this;
+        var talk = this._talks[this._cursor];
+        var str = talk[0];
+        var vid = talk[1];
+        $(this._textObj).html(str);
+        var url = "/voice/ogg/" + vid;
+        this._audio.pause();
+        this._audio = new Audio(url);
+        this._audio.addEventListener("ended", function() {
+            log("play ended.");
+            _this._cursorNext();
+            _this._play();
+        }, true);
+        this._audio.play();
+        log("play: " + url);
+    }
+};
+
+$(document).ready(function() {
+    log("document ready.");
+    var keyword = $.getUrlVar('keyword');
+    log("raw keyword: " + keyword);
+    if (!keyword) {
+        keyword = "";
+    }
+    var url = "/query/json/" + keyword;
+    log("json: " + url);
+    $.getJSON(url, function(json) {
+        log("json loaded.");
+        var player = new Player(json, $("div#text p"), $("div#controller p#status"));
+        player.start();
+    });
+});
+</script>
+	</head>
+	<body>
+		<div id="player">
+			<div id="query">
+				<form action="/" method="get">
+					<fieldset>
+						<input type="search" name="keyword" placeholder="キーワードを入力">
+						<input type="submit" value="検索">
+					</fieldset>
+				</form>
+			</div>
+			<div id="text">
+				<p></p>
+			</div>
+			<div id="controller">
+				<!--
+				<p id="mode">Shuffle</p>
+				-->
+				<p id="status"></p>
+			</div>
+			<header>
+				<p>二階堂真紅プレイヤー</p>
+			</header>
+			<footer>
+				<p>このプレイヤーは「いろとりどりのセカイ」のデータをメーカーの許諾なく、勝手に利用するものです。ご注意ください。</p>
+			</footer>
+		</div>
+	</body>
+</html>

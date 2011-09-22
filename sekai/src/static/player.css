@@ -1,0 +1,59 @@
+@charset "UTF-8";
+body {
+	
+}
+
+div#query {
+	text-align: right;
+}
+div#query fieldset {
+	border: none;
+}
+div#query input {
+	display: inline;
+}
+
+div#text {
+	padding-top: 120px;
+	height: 250px;
+}
+div#text p {
+	text-align: center;
+	font-size: 30px;
+	line-height: 40px;
+	font-family: "ヒラギノ明朝 Pro W6", "Hiragino Mincho Pro", "HGS明朝E", "ＭＳ Ｐ明朝", serif;
+}
+
+header {
+	padding-left: 15px;
+	font-size: 12px;
+}
+
+footer {
+	text-align: right;
+	font-size: 8px;
+}
+
+div#controller {
+	height: 30px;
+	text-align: right;
+	font-size: 14px;
+	font-family: Arial;
+	
+}
+div#controller p {
+	display: inline;
+	margin-right: 30px;
+	cursor: pointer;
+}
+
+div#player {
+	overflow: auto;
+	height: 600px;
+	width: 800px;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-top: -300px;
+	margin-left: -400px;
+}
