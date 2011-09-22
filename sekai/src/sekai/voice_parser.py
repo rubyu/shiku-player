@@ -5,10 +5,10 @@ __date__ ="$2011/09/20 17:41:44$"
 
 import os
 import logging
+import cPickle as _pickle
+
 from file_utils \
     import from_little_endian
-from defs \
-    import VOICE_FILE
     
     
 class Voice:
@@ -28,11 +28,13 @@ class Voice:
     〜データ〜
     EOF
     """
+    
     _cls_ver = 0
+    
     def __init__(self, path):
         self._ins_ver = self._cls_ver
         self.path = path
-        logging.info("Voice: path=%s", self.path)
+        logging.debug("Voice: path=%s", self.path)
         if not os.path.isfile(path):
             raise IOError()
         self.file = open(self.path, "rb")
@@ -48,6 +50,17 @@ class Voice:
         if self._ins_ver != self._cls_ver:
             raise ValueError() 
         self.file = open(self.path, "rb")
+    
+    @classmethod
+    def restore_or_create(cls, path, dump):
+        try:
+            ins = _pickle.load(open(dump, "rb"))
+            logging.debug("restore from %s", dump)
+        except:
+            ins = cls(path)
+            _pickle.dump(ins, open(dump, "wb"))
+            logging.debug("dump to %s", dump)
+        return ins
     
     def _read_int(self):
         return from_little_endian(self.file.read(4))
@@ -96,6 +109,8 @@ class Voice:
         
         
 def main():
+    from defs \
+        import VOICE_FILE
     voice = Voice(VOICE_FILE)
     vid = "toiku_ayumu"
     temp = open(os.path.join(os.path.split(VOICE_FILE)[0], "voice.bin.%s.ogg" % vid), "wb")

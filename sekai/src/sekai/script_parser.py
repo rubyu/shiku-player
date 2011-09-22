@@ -5,11 +5,11 @@ __date__ ="$2011/09/20 21:01:15$"
 
 import os
 import logging
+import cPickle as _pickle
+
 from file_utils \
     import from_little_endian, byte_int, is_cp932_2byte_char, \
             from_cp932, pretty, byte_array
-from defs \
-    import SCRIPT_FILE
 
             
 class Script:
@@ -19,7 +19,7 @@ class Script:
     def __init__(self, path):
         self._ins_ver = self._cls_ver
         self.path = path
-        logging.info("Script: path=%s", self.path)
+        logging.debug("Script: path=%s", self.path)
         if not os.path.isfile(path):
             raise IOError()
         str_arr = open(self.path, "rb").read()
@@ -66,7 +66,18 @@ class Script:
     def __setstate__(self, dict):
         self.__dict__.update(dict)
         if self._ins_ver != self._cls_ver:
-            raise ValueError() 
+            raise ValueError()
+            
+    @classmethod
+    def restore_or_create(cls, path, dump):
+        try:
+            ins = _pickle.load(open(dump, "rb"))
+            logging.debug("restore from %s", dump)
+        except:
+            ins = cls(path)
+            _pickle.dump(ins, open(dump, "wb"))
+            logging.debug("dump to %s", dump)
+        return ins
     
     def _is_text(self, arr):
         u"""
@@ -206,7 +217,7 @@ class Script:
                         break
                     if not text[2]:
                         logging.warning(
-                            "voice id was not found related to '%s'", text[0])
+                            "voice id related to '%s' was not found", text[0])
                 texts.append(text)
         return texts
 
@@ -262,7 +273,7 @@ class Script:
            0x00 == cid[3] and \
            0x00 == cid[4]:
             logging.warning(
-                "Maybe '%s' is a valid character id, but not defined yet", cid)
+                "Maybe '%s' is a valid character id, but not defined in cid table", cid)
             
         return ""
 
@@ -273,6 +284,8 @@ class Script:
         return from_little_endian(file[:3])
 
 def main():
+    from defs \
+        import SCRIPT_FILE
     script = Script(SCRIPT_FILE)
     for title in script.titles:
         for text in script.texts[title]:
