@@ -34,14 +34,19 @@ def query_json_():
 
 @app.route("/query/json/<keyword>")
 def query_json(keyword):
+    u"""
+    真紅の発言について、キーワードが含まれるものだけを返す。
+    
+    jsonで、以下の形式で。
+    [ [発言, ボイスID], ... ]
+    """
     logging.debug("keyword: %s", keyword)
-    p = re.compile(keyword)
     arr = []
     for title in script.titles:
         for text in script.texts[title]:
             str, name, vid = text
             if name == u"真紅" and \
-               p.search(str):
+               -1 != str.find(keyword):
                 str = html_ruby(str)
                 arr.append((str, vid))
     logging.debug("size: %s", len(arr))
@@ -52,6 +57,10 @@ def query_json(keyword):
 
 @app.route("/voice/ogg/<voice_id>")
 def output_voice(voice_id):
+    u"""
+    指定のIDのボイスを切り出して返す。
+    形式はもとのoggのまま。
+    """
     logging.debug("voice id: %s", voice_id)
     response = make_response()
     response.data = voice.get(voice_id)
@@ -59,7 +68,7 @@ def output_voice(voice_id):
     response.headers["Content-Disposition"] = "attachment; filename=%s.ogg" % voice_id
     return response
 
-ruby_pat = re.compile("\[(.+)\|(.+)\]")
+ruby_pat = re.compile("\[(.+?)\|(.+?)\]")
 def html_ruby(str):
     return ruby_pat.sub(r"<ruby>\2<rt>\1</rt></ruby>", str)
 

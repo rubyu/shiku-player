@@ -117,10 +117,10 @@ Player.prototype = {
 $(document).ready(function() {
     log("document ready.");
     var keyword = $.getUrlVar('keyword');
-    log("raw keyword: " + keyword);
     if (!keyword) {
         keyword = "";
     }
+    log("keyword: " + keyword);
     var url = "/query/json/" + keyword;
     log("json: " + url);
     $.getJSON(url, function(json) {
