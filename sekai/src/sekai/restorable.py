@@ -22,21 +22,13 @@ class Restorable(object):
             変数。
             データのバージョニングなどに使う。
             
-        ・_restore_after
+        ・__setstate__
             関数。
-            restore後に呼ばれる。
+            pickleが使う。
             
             ・データのIDが、新しいクラスで変更されている場合
             ・データのバージョンが、新しいクラスで変更されている場合
             は、ここでバージョン移行処理を行う。
-            
-        ・_save_before
-            関数。
-            save前に呼ばれる。
-            
-        ・__setstate__
-            関数。
-            pickleが使う。
             
         ・__getstate__
             関数。
@@ -46,7 +38,6 @@ class Restorable(object):
     """
     
     def __init__(self):
-        logging.debug("Create")
         self._ins_rest_id = self._cls_rest_id()
         self._ins_rest_ver = self._cls_rest_ver()
         logging.debug("Created restorable(id=%s, ver=%s)", self._ins_rest_id, self._ins_rest_ver)
@@ -63,12 +54,7 @@ class Restorable(object):
     
     @classmethod
     def restore(cls, path):
-        logging.debug("Restore")
         ins = _pickle.load(open(path, "rb"))
-        if hasattr(ins, "_restore_after") and \
-           type(ins._restore_after) is types.MethodType:
-            logging.debug("Call _restore_after of %s", ins)
-            ins._restore_after()
         ins._check_rest_id()
         ins._check_rest_ver()
         logging.debug("Restored restorable(id=%s, ver=%s) from %s", ins._ins_rest_id, ins._ins_rest_ver, path)
@@ -85,11 +71,6 @@ class Restorable(object):
                 self._ins_rest_ver, self._cls_rest_ver())
     
     def save(self, path):
-        logging.debug("Save")
-        if hasattr(self, "_save_before") and \
-           type(self._save_before) is types.MethodType:
-            logging.debug("Call _save_before of %s", self)
-            self._save_before()
         _pickle.dump(self, open(path, "wb"))
         logging.debug("Saved restorable(id=%s, ver=%s) to %s", self._ins_rest_id, self._ins_rest_ver, path)
     

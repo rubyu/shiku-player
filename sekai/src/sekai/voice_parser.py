@@ -50,8 +50,6 @@ class Voice(Restorable):
     
     def __setstate__(self, dict):
         self.__dict__.update(dict)
-    
-    def _restore_after(self):
         self.file = open(self.path, "rb")
     
     def _read_int(self):

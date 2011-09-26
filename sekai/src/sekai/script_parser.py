@@ -85,12 +85,6 @@ class Script(Restorable):
         else:
             self.supported = False
     
-    def __getstate__(self):
-        return self.__dict__.copy()
-    
-    def __setstate__(self, dict):
-        self.__dict__.update(dict)
-            
     def _is_text(self, arr):
         u"""
         シナリオファイル内の、正しい文字列パターンであればTrueを返す。
