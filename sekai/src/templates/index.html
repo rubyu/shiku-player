@@ -121,6 +121,11 @@ $(document).ready(function() {
         keyword = "";
     }
     log("keyword: " + keyword);
+    
+    if (keyword) {
+        $("input[name=keyword]").attr("placeholder", keyword);
+    }
+    
     var url = "/query/json/" + keyword;
     log("json: " + url);
     $.getJSON(url, function(json) {
