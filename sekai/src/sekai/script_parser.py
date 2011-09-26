@@ -578,7 +578,7 @@ if __name__ == "__main__":
     
     import sys
     import codecs
-    sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+    sys.stdout = codecs.getwriter(sys.getfilesystemencoding())(sys.stdout)
     
     if debug:
         logging.basicConfig(
