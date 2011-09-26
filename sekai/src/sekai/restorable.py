@@ -5,7 +5,6 @@ __date__ ="$2011/09/26 15:42:24$"
 
 import unittest
 import logging
-import types
 import cPickle as _pickle
         
         

@@ -126,7 +126,7 @@ $(document).ready(function() {
         $("input[name=keyword]").attr("placeholder", keyword);
     }
     
-    var url = "/query/json/" + keyword;
+    var url = "/query/json?keyword=" + keyword;
     log("json: " + url);
     $.getJSON(url, function(json) {
         log("json loaded.");

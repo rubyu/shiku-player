@@ -16,37 +16,29 @@ import re
 import json
 
 from flask \
-    import Flask, make_response, render_template
+    import Flask, make_response, render_template, request
 app = Flask(__name__)
 
 from sekai.voice_parser import Voice
 from sekai.script_parser import Script
+from config import Config
 
 voice = None
 script = None
-
-from config \
-    import Config
 
 @app.route("/")
 def show_root():
     return render_template("index.html")
 
-@app.route("/query/json/")
-def query_json_():
-    u"""
-    これは綺麗じゃないと思うんだが、解決法がよくわからない。
-    """
-    return query_json("")
-
-@app.route("/query/json/<keyword>")
-def query_json(keyword):
+@app.route("/query/json")
+def query_json():
     u"""
     真紅の発言について、キーワードが含まれるものだけを返す。
     
     jsonで、以下の形式で。
     [ [発言, ボイスID], ... ]
     """
+    keyword = request.args.get("keyword", "")
     logging.debug("keyword: %s", keyword)
     arr = []
     for text in script.texts:
