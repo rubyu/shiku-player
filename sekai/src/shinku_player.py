@@ -49,13 +49,12 @@ def query_json(keyword):
     """
     logging.debug("keyword: %s", keyword)
     arr = []
-    for title in script.titles:
-        for text in script.texts[title]:
-            str, name, vid = text
-            if name == u"真紅" and \
-               -1 != str.find(keyword):
-                str = html_ruby(str)
-                arr.append((str, vid))
+    for text in script.texts:
+        str, name, vid = text
+        if name == u"真紅" and \
+           -1 != str.find(keyword):
+            str = html_ruby(str)
+            arr.append((str, vid))
     logging.debug("size: %s", len(arr))
     response = make_response()
     response.data = json.dumps(arr)
@@ -100,7 +99,7 @@ class ProcWrapper(object):
         app.run()
             
 
-class ParserTestCase(unittest.TestCase):
+class OptionParserTestCase(unittest.TestCase):
     
     
     class DummyProcWrapper(object):
@@ -158,7 +157,7 @@ def parse(wrapper):
         config = Config.restore("config.p")
     except Exception, e:
         logging.debug("Excepted: %s", e)
-        parser.error("Program has not enough data. The 'path' parameter never had been given to this program!")
+        p.error("Program has not enough data. The 'path' parameter never had been given to this program!")
         sys.exit()
         
     voice_path = os.path.join(config.path, "voice.bin")
@@ -166,8 +165,9 @@ def parse(wrapper):
     if not os.path.isdir(config.path) or \
        not os.path.isfile(voice_path) or \
        not os.path.isfile(script_path):
-        parser.error("File not found. 'voice.bin' and 'World.hcb' must be in the 'path=%s'!" % config.path)
+        p.error("File not found. 'voice.bin' and 'World.hcb' must be in the 'path=%s'!" % config.path)
         sys.exit()
+    
     
     app.debug = True
     wrapper.app_run(voice_path, script_path)

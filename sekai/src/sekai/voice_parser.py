@@ -125,7 +125,7 @@ class ProcWrapper(object):
             print "%s is invalid Voice ID!" % voice_id
         
         
-class ParserTestCase(unittest.TestCase):
+class OptionParserTestCase(unittest.TestCase):
     
     
     class DummyProcWrapper(object):

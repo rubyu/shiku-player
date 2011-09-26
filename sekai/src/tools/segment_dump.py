@@ -140,11 +140,9 @@ def dump(filename):
             )
     
 if __name__ == "__main__":    
-    filename = "World.hcb"
-    #filename = "World_preview.hcb"
-    #filename = "Hoshimemo_EH.hcb"
-    #filename = "_HOSHIMEM.HCB"
-    #filename = "Hoshimemo_EHchn.bch"
+    filename = "/tmp/sekai/World.hcb"
+    filename = "/tmp/sekai/World.1.1.hcb"
+    #filename = /tmp/sekai/"World_preview.hcb"
     dump(filename)
     
     
