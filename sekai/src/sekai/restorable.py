@@ -13,24 +13,35 @@ class Restorable(object):
     u"""
     pickleに依存したsave/restoreを実装するクラス。
     継承クラスは
+    
         ・_rest_id
             変数。
             データの正当性の判断などに使う。
+            
         ・_rest_ver
             変数。
             データのバージョニングなどに使う。
+            
         ・_restore_after
             関数。
             restore後に呼ばれる。
+            
+            ・データのIDが、新しいクラスで変更されている場合
+            ・データのバージョンが、新しいクラスで変更されている場合
+            は、ここでバージョン移行処理を行う。
+            
         ・_save_before
             関数。
             save前に呼ばれる。
+            
         ・__setstate__
             関数。
             pickleが使う。
+            
         ・__getstate__
             関数。
             pickleが使う。
+            
     を実装して動作をカスタマイズできる。
     """
     
@@ -38,7 +49,7 @@ class Restorable(object):
         logging.debug("Create")
         self._ins_rest_id = self._cls_rest_id()
         self._ins_rest_ver = self._cls_rest_ver()
-        logging.debug("Created %s(ver=%s)", self._ins_rest_id, self._ins_rest_ver)
+        logging.debug("Created restorable(id=%s, ver=%s)", self._ins_rest_id, self._ins_rest_ver)
     
     def _cls_rest_id(self):
         if not hasattr(self, "_rest_id"):
@@ -58,8 +69,20 @@ class Restorable(object):
            type(ins._restore_after) is types.MethodType:
             logging.debug("Call _restore_after of %s", ins)
             ins._restore_after()
-        logging.debug("Restored %s(ver=%s) from %s", ins._ins_rest_id, ins._ins_rest_ver, path)
+        ins._check_rest_id()
+        ins._check_rest_ver()
+        logging.debug("Restored restorable(id=%s, ver=%s) from %s", ins._ins_rest_id, ins._ins_rest_ver, path)
         return ins
+    
+    def _check_rest_id(self):
+        if self._ins_rest_id != self._cls_rest_id():
+            raise ValueError("Restorable ID mismatch! %s != %s", 
+                self._ins_rest_id, self._cls_rest_id())
+                
+    def _check_rest_ver(self):
+        if self._ins_rest_ver != self._cls_rest_ver():
+            raise ValueError("Restorable Version mismatch! %s != %s", 
+                self._ins_rest_ver, self._cls_rest_ver())
     
     def save(self, path):
         logging.debug("Save")
@@ -68,7 +91,7 @@ class Restorable(object):
             logging.debug("Call _save_before of %s", self)
             self._save_before()
         _pickle.dump(self, open(path, "wb"))
-        logging.debug("Saved %s(ver=%s) to %s", self._ins_rest_id, self._ins_rest_ver, path)
+        logging.debug("Saved restorable(id=%s, ver=%s) to %s", self._ins_rest_id, self._ins_rest_ver, path)
     
 
 class Suc1(Restorable):

@@ -52,14 +52,6 @@ class Voice(Restorable):
         self.__dict__.update(dict)
     
     def _restore_after(self):
-        if self._ins_rest_id != self._cls_rest_id():
-            raise ValueError("Restorable ID mismatch! %s != %s", 
-                self._ins_rest_id, self._cls_rest_id())
-        
-        if self._ins_rest_ver != self._cls_rest_ver():
-            raise ValueError("Restorable Version mismatch! %s != %s", 
-                self._ins_rest_ver, self._cls_rest_ver())
-                
         self.file = open(self.path, "rb")
     
     def _read_int(self):

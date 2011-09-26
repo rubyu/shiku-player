@@ -91,15 +91,6 @@ class Script(Restorable):
     def __setstate__(self, dict):
         self.__dict__.update(dict)
             
-    def _restore_after(self):
-        if self._ins_rest_id != self._cls_rest_id():
-            raise ValueError("Restorable ID mismatch! %s != %s", 
-                self._ins_rest_id, self._cls_rest_id())
-        
-        if self._ins_rest_ver != self._cls_rest_ver():
-            raise ValueError("Restorable Version mismatch! %s != %s", 
-                self._ins_rest_ver, self._cls_rest_ver())
-                
     def _is_text(self, arr):
         u"""
         シナリオファイル内の、正しい文字列パターンであればTrueを返す。

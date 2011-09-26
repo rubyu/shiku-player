@@ -14,12 +14,4 @@ class Config(Restorable):
     def __init__(self):
         Restorable.__init__(self)
     
-    def _restore_after(self):
-        if self._ins_rest_id != self._cls_rest_id():
-            raise ValueError("Restorable ID mismatch! %s != %s", 
-                self._ins_rest_id, self._cls_rest_id())
-        
-        if self._ins_rest_ver != self._cls_rest_ver():
-            raise ValueError("Restorable Version mismatch! %s != %s", 
-                self._ins_rest_ver, self._cls_rest_ver())
         
