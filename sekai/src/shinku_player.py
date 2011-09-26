@@ -76,11 +76,18 @@ def output_voice(voice_id):
 
 ruby_pat = re.compile("\[(.+?)\|(.+?)\]")
 def html_ruby(str):
+    u"""
+    ...[ルビ|テキスト]...の形式を、HTMLのルビタグに変換する。
+    複数個含まれる場合は全て変換する。
+    """
     return ruby_pat.sub(r"<ruby>\2<rt>\1</rt></ruby>", str)
 
 
 class ProcWrapper(object):
-    
+    u"""
+    コマンドラインから呼び出されるラッパ。
+    テスト時はダミーに差し替えられる。
+    """
     def app_run(self, voice_path, script_path):
         global voice
         global script
@@ -100,10 +107,14 @@ class ProcWrapper(object):
             
 
 class OptionParserTestCase(unittest.TestCase):
-    
-    
+    u"""
+    コマンドラインオプションのテスト。
+    """
     class DummyProcWrapper(object):
-
+        u"""
+        ダミーのラッパクラス。
+        コールされた関数のログを持つ。
+        """
         def __init__(self):
             self._log = []
 
@@ -128,12 +139,18 @@ class OptionParserTestCase(unittest.TestCase):
         sys.argv = [self._argv[0]]
         
     def test_path(self):
+        u"""
+        引数pathが与えられた場合。
+        """
         sys.argv.append("--path=%s" % self._path)
         parse(self._wrapper)
         self.assertEqual(["app_run"], self._wrapper._log)
         
 
 def parser():
+    u"""
+    OptionParserのインスタンスを返す。
+    """
     from optparse import OptionParser
     p = OptionParser("usage: shinku_player.py --path=game_installed")
     p.add_option(
@@ -145,6 +162,9 @@ def parser():
     return p
 
 def parse(wrapper):
+    u"""
+    コマンドラインオプションで分岐し、ラッパをコールする。
+    """
     p = parser()
     options, args = p.parse_args()
     
@@ -167,7 +187,6 @@ def parse(wrapper):
        not os.path.isfile(script_path):
         p.error("File not found. 'voice.bin' and 'World.hcb' must be in the 'path=%s'!" % config.path)
         sys.exit()
-    
     
     app.debug = True
     wrapper.app_run(voice_path, script_path)

@@ -101,7 +101,10 @@ class Voice(Restorable):
 
 
 class ProcWrapper(object):
-    
+    u"""
+    コマンドラインから呼び出されるラッパ。
+    テスト時はダミーに差し替えられる。
+    """
     def print_list(self, voice_file):
         voice = Voice(voice_file)
         for key in sorted(voice.dict.keys()):
@@ -118,10 +121,14 @@ class ProcWrapper(object):
         
         
 class OptionParserTestCase(unittest.TestCase):
-    
-    
+    u"""
+    コマンドラインオプションのテスト。
+    """
     class DummyProcWrapper(object):
-
+        u"""
+        ダミーのラッパクラス。
+        コールされた関数のログを持つ。
+        """
         def __init__(self):
             self._log = []
 
@@ -148,28 +155,43 @@ class OptionParserTestCase(unittest.TestCase):
         sys.argv = [self._argv[0]]
         
     def test_list(self):
+        u"""
+        引数listが与えられた場合。
+        """
         sys.argv.append("--list")
         parse(self._wrapper)
         self.assertEqual([], self._wrapper._log)
         
     def test_path_list(self):
+        u"""
+        引数path, listが与えられた場合。
+        """
         sys.argv.append("--path=%s" % self._path)
         sys.argv.append("--list")
         parse(self._wrapper)
         self.assertEqual(["print_list"], self._wrapper._log)
         
     def test_extract(self):
+        u"""
+        引数extractが与えられた場合。
+        """
         sys.argv.append("--extract=%s" % self._extract)
         parse(self._wrapper)
         self.assertEqual([], self._wrapper._log)
         
     def test_path_extract(self):
+        u"""
+        引数path, extractが与えられた場合。
+        """
         sys.argv.append("--path=%s" % self._path)
         sys.argv.append("--extract=%s" % self._extract)
         parse(self._wrapper)
         self.assertEqual([], self._wrapper._log)
         
     def test_path_extract_id(self):
+        u"""
+        引数path, extract, idが与えられた場合。
+        """
         sys.argv.append("--path=%s" % self._path)
         sys.argv.append("--extract=%s" % self._extract)
         sys.argv.append("--id=%s" % self._id)
@@ -177,6 +199,9 @@ class OptionParserTestCase(unittest.TestCase):
         self.assertEqual(["output_voice"], self._wrapper._log)
 
 def parser():
+    u"""
+    OptionParserのインスタンスを返す。
+    """
     from optparse import OptionParser
     p = OptionParser(
         "usage: script_parser.py --path=to_voice.bin --list --extract=output_directory --id=voice_id")
@@ -208,6 +233,9 @@ def parser():
     return p
 
 def parse(wrapper):
+    u"""
+    コマンドラインオプションで分岐し、ラッパをコールする。
+    """
     p = parser()
     options, args = p.parse_args()
     if options.path:

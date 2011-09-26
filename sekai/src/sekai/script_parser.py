@@ -314,8 +314,10 @@ class Script(Restorable):
         return from_cp932(id_str)
 
 
-class ScriptParserTest(unittest.TestCase):
-    
+class ScriptTest(unittest.TestCase):
+    u"""
+    Scriptのテスト。
+    """
     @classmethod
     def setUpClass(cls):
         cls._v1_0_path = "/tmp/sekai/World.hcb"
@@ -326,6 +328,9 @@ class ScriptParserTest(unittest.TestCase):
         pass
     
     def test_parse(self):
+        u"""
+        各チャプタの開始、終了インデックスと、そのテキストが正しいかどうか。
+        """
         data = [
             [
                 u"",
@@ -423,7 +428,10 @@ class ScriptParserTest(unittest.TestCase):
 
 
 class ProcWrapper(object):
-    
+    u"""
+    コマンドラインから呼び出されるラッパ。
+    テスト時はダミーに差し替えられる。
+    """
     def print_script(self, script_file):
         script = Script(script_file)
         if not script.id:
@@ -444,6 +452,9 @@ class ProcWrapper(object):
 
 from StringIO import StringIO
 class ProcWrapperTest(unittest.TestCase):
+    u"""
+    ラッパのテスト。
+    """
     
     @classmethod
     def setUpClass(cls):
@@ -462,6 +473,9 @@ class ProcWrapperTest(unittest.TestCase):
         self.wrapper = ProcWrapper()
 
     def test_print_script(self):
+        u"""
+        v1.0のスクリプトの場合の標準出力が正しいか。
+        """
         self.wrapper.print_script(self._v1_0_path)
         self.assertEqual(
             u"""いろとりどりのセカイ\n"""
@@ -477,6 +491,9 @@ class ProcWrapperTest(unittest.TestCase):
         )
 
     def test_print_script_not_script_id(self):
+        u"""
+        v1.1のスクリプトの場合の標準出力が正しいか。
+        """
         self.wrapper.print_script(self._v1_1_path)
         self.assertEqual(
             u"""'いろとりどりのセカイ　ver1.1' is not supported.\n""",
@@ -484,6 +501,9 @@ class ProcWrapperTest(unittest.TestCase):
         )
         
     def test_print_script_not_hcb(self):
+        u"""
+        誤ったファイルがエラーで死ぬか。
+        """
         try:
             self.wrapper.print_script(self._other_path)
             self.assert_(False)
@@ -492,10 +512,14 @@ class ProcWrapperTest(unittest.TestCase):
         
 
 class OptionParserTestCase(unittest.TestCase):
-    
-    
+    u"""
+    コマンドラインオプションのテスト。
+    """
     class DummyProcWrapper(object):
-
+        u"""
+        ダミーのラッパクラス。
+        コールされた関数のログを持つ。
+        """
         def __init__(self):
             self._log = []
 
@@ -520,12 +544,18 @@ class OptionParserTestCase(unittest.TestCase):
         sys.argv = [self._argv[0]]
         
     def test_path(self):
+        u"""
+        引数pathが与えられた場合。
+        """
         sys.argv.append("--path=%s" % self._path)
         parse(self._wrapper)
         self.assertEqual(["print_script"], self._wrapper._log)
         
 
 def parser():
+    u"""
+    OptionParserのインスタンスを返す。
+    """
     from optparse import OptionParser
     p = OptionParser("usage: script_parser.py --path=to_World.hcb")
     p.add_option(
@@ -537,6 +567,9 @@ def parser():
     return p
 
 def parse(wrapper):
+    u"""
+    コマンドラインオプションで分岐し、ラッパをコールする。
+    """
     p = parser()
     options, args = p.parse_args()
     if options.path:
