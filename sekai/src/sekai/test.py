@@ -21,13 +21,12 @@ class ScriptTestCase(unittest.TestCase):
         """
         vids = set(voice.dict.keys())
         missed = set()
-        for title in script.titles:
-            for text in script.texts[title]:
-                str, cname, vid = text
-                if not vid:
-                    continue
-                if vid not in vids:
-                    missed.add(vid)
+        for text in script.texts:
+            str, cname, vid = text
+            if not vid:
+                continue
+            if vid not in vids:
+                missed.add(vid)
         self.assertEqual(0, len(missed)) 
     
     def test_talk_has_vid(self):
@@ -36,13 +35,12 @@ class ScriptTestCase(unittest.TestCase):
         voice idが付加されていなければならない。
         """
         missed = set()
-        for title in script.titles:
-            for text in script.texts[title]:
-                str, cname, vid = text
-                if cname and \
-                   cname != u"悠馬" and \
-                   not vid:
-                    missed.add(text)
+        for text in script.texts:
+            str, cname, vid = text
+            if cname and \
+               cname != u"悠馬" and \
+               not vid:
+                missed.add(text)
         self.assertEqual(0, len(missed))
     
     
