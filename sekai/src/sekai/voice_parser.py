@@ -3,17 +3,18 @@
 __author__="rubyu"
 __date__ ="$2011/09/20 17:41:44$"
 
+import unittest
 import logging
 import os
 import sys
-from optparse import OptionParser
-import cPickle as _pickle
 
+from restorable \
+    import Restorable
 from file_utils \
     import from_little_endian
     
     
-class Voice:
+class Voice(Restorable):
     u"""
     ボイスデータのパーサ。
     データは普通のoggファイル。
@@ -31,10 +32,10 @@ class Voice:
     EOF
     """
     
-    _cls_ver = 0
+    _rest_ver = 0
     
     def __init__(self, path):
-        self._ins_ver = self._cls_ver
+        Restorable.__init__(self)
         self.path = path
         logging.debug("Voice: path=%s", self.path)
         if not os.path.isfile(path):
@@ -49,20 +50,17 @@ class Voice:
     
     def __setstate__(self, dict):
         self.__dict__.update(dict)
-        if self._ins_ver != self._cls_ver:
-            raise ValueError() 
-        self.file = open(self.path, "rb")
     
-    @classmethod
-    def restore_or_create(cls, path, dump):
-        try:
-            ins = _pickle.load(open(dump, "rb"))
-            logging.debug("Voice restored from %s", dump)
-        except:
-            ins = cls(path)
-            _pickle.dump(ins, open(dump, "wb"))
-            logging.debug("Voice dumped to %s", dump)
-        return ins
+    def _restore_after(self):
+        if self._ins_rest_id != self._cls_rest_id():
+            raise ValueError("Restorable ID mismatch! %s != %s", 
+                self._ins_rest_id, self._cls_rest_id())
+        
+        if self._ins_rest_ver != self._cls_rest_ver():
+            raise ValueError("Restorable Version mismatch! %s != %s", 
+                self._ins_rest_ver, self._cls_rest_ver())
+                
+        self.file = open(self.path, "rb")
     
     def _read_int(self):
         return from_little_endian(self.file.read(4))
@@ -108,52 +106,137 @@ class Voice:
             logging.info("get: %s adress=%s length=%s", id, adress, length)
             return self._read_str(length)
         raise KeyError()
+
+
+class ProcWrapper(object):
+    
+    def print_list(self, voice_file):
+        voice = Voice(voice_file)
+        for key in sorted(voice.dict.keys()):
+            print key
+            
+    def output_voice(self, voice_file, extract_dir, voice_id):
+        voice = Voice(voice_file)
+        if voice_id in voice.dict:
+            temp_path = os.path.join(extract_dir, "%s.ogg" % voice_id)
+            temp = open(temp_path, "wb")
+            temp.write(voice.get(options.id))
+        else:
+            print "%s is invalid Voice ID!" % voice_id
         
         
-def main():
-    #sys.argv.append("--path=/tmp/sekai/voice.bin")
-    #sys.argv.append("--list")
-    #sys.argv.append("--id=00000350")
-    parser = OptionParser(
-        "usage: script_parser.py --path=to_voice.bin --extract=voice_id --list")
-    parser.add_option(
+class ParserTestCase(unittest.TestCase):
+    
+    
+    class DummyProcWrapper(object):
+
+        def __init__(self):
+            self._log = []
+
+        def __getattr__(self, name):
+            def _dummy(self, *args, **kwargs):
+                pass
+            self._log.append(name)
+            return _dummy
+    
+        
+    @classmethod
+    def setUpClass(cls):
+        cls._path = "/tmp/sekai/voice.bin"
+        cls._extract = "/tmp/sekai/voice_test"
+        cls._id = "00000350"
+        cls._argv = sys.argv
+    
+    @classmethod
+    def terDownClass(cls):
+        sys.argv = cls._argv
+    
+    def setUp(self):
+        self._wrapper = self.DummyProcWrapper()
+        sys.argv = [self._argv[0]]
+        
+    def test_list(self):
+        sys.argv.append("--list")
+        parse(self._wrapper)
+        self.assertEqual([], self._wrapper._log)
+        
+    def test_path_list(self):
+        sys.argv.append("--path=%s" % self._path)
+        sys.argv.append("--list")
+        parse(self._wrapper)
+        self.assertEqual(["print_list"], self._wrapper._log)
+        
+    def test_extract(self):
+        sys.argv.append("--extract=%s" % self._extract)
+        parse(self._wrapper)
+        self.assertEqual([], self._wrapper._log)
+        
+    def test_path_extract(self):
+        sys.argv.append("--path=%s" % self._path)
+        sys.argv.append("--extract=%s" % self._extract)
+        parse(self._wrapper)
+        self.assertEqual([], self._wrapper._log)
+        
+    def test_path_extract_id(self):
+        sys.argv.append("--path=%s" % self._path)
+        sys.argv.append("--extract=%s" % self._extract)
+        sys.argv.append("--id=%s" % self._id)
+        parse(self._wrapper)
+        self.assertEqual(["output_voice"], self._wrapper._log)
+
+def parser():
+    from optparse import OptionParser
+    p = OptionParser(
+        "usage: script_parser.py --path=to_voice.bin --list --extract=output_directory --id=voice_id")
+    p.add_option(
         "-p", 
         "--path",
         type="string",
-        help="file path to voice.bin."
+        help="file path to voice.bin"
     )
-    parser.add_option(
+    p.add_option(
+        "-e", 
+        "--extract",
+        type="string",
+        help="directory path to extract voice file"
+    )
+    p.add_option(
         "-i", 
         "--id",
         type="string",
-        help="voice ID to extract."
+        help="voice ID to extract"
     )
-    parser.add_option(
+    p.add_option(
         "-l", 
         "--list",
         action="store_true",
         default=False,
-        help="print list of Voice ID."
-    )    
-    options = parser.parse_args()[0]
+        help="print list of Voice ID"
+    )
+    return p
+
+def parse(wrapper):
+    p = parser()
+    options, args = p.parse_args()
+    if options.path:
+        if options.extract:
+            if options.id:
+                wrapper.output_voice(options.path, options.extract, options.id)
+        elif options.list:
+            wrapper.print_list(options.path)
+        return
+    if not debug:
+        p.print_help()
     
-    if not options.path:
-        parser.print_help()
-        sys.exit(-1)
-    
-    voice = Voice(options.path)
-    if options.list:
-        for key in sorted(voice.dict.keys()):
-            print key
-        sys.exit()
-    if options.id:
-        if options.id in voice.dict:
-            temp_path = os.path.join(os.path.split(options.path)[0], "%s.ogg" % options.id)
-            temp = open(temp_path, "wb")
-            temp.write(voice.get(options.id))
-        else:
-            print "Invalid Voice ID!"
-        sys.exit()
-        
 if __name__ == "__main__":
-    main()
+    debug = False
+#    debug = True
+    
+    if debug:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
+        )
+        unittest.main()
+    else:
+        parse(ProcWrapper())

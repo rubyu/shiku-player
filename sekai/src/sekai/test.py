@@ -5,17 +5,8 @@ __date__ ="$2011/09/21 14:07:07$"
 
 import unittest
 import logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
-)
 from voice_parser import Voice
 from script_parser import Script
-from defs \
-    import VOICE_FILE, SCRIPT_FILE
-
-voice = Voice(VOICE_FILE)
-script = Script(SCRIPT_FILE)
 
 
 class ScriptTestCase(unittest.TestCase):
@@ -72,4 +63,12 @@ class VoiceTestCase(unittest.TestCase):
     
     
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
+    )
+    
+    voice = Voice("/tmp/sekai/voice.bin")
+    script = Script("/tmp/sekai/World.hcb")
+
     unittest.main()

@@ -3,6 +3,7 @@
 __author__="rubyu"
 __date__ ="$2011/09/14 11:25:52$"
 
+import unittest
 import logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -11,8 +12,6 @@ logging.basicConfig(
 
 import os
 import sys
-from optparse import OptionParser
-import cPickle as _pickle
 import re
 import json
 
@@ -26,17 +25,9 @@ from sekai.script_parser import Script
 voice = None
 script = None
 
-def save(obj, dump):
-    try:
-        _pickle.dump(obj, open(dump, "wb"))
-    except:
-        pass
-def restore(dump):
-    try:
-        return _pickle.load(open(dump, "rb"))
-    except:
-        pass
-    
+from config \
+    import Config
+
 @app.route("/")
 def show_root():
     return render_template("index.html")
@@ -88,41 +79,104 @@ ruby_pat = re.compile("\[(.+?)\|(.+?)\]")
 def html_ruby(str):
     return ruby_pat.sub(r"<ruby>\2<rt>\1</rt></ruby>", str)
 
-def main():
-    parser = OptionParser("usage: shinku_player.py --path=game_installed")
-    parser.add_option(
+
+class ProcWrapper(object):
+    
+    def app_run(self, voice_path, script_path):
+        global voice
+        global script
+        try:
+            voice = Voice.restore("voice.p")
+        except Exception, e:
+            logging.debug("Excepted: %s", e)
+            voice = Voice(voice_path)
+            voice.save("voice.p")
+        try:
+            script = Script.restore("script.p")
+        except Exception, e:
+            logging.debug("Excepted: %s", e)
+            script = Script(script_path)
+            script.save("script.p")
+        app.run()
+            
+
+class ParserTestCase(unittest.TestCase):
+    
+    
+    class DummyProcWrapper(object):
+
+        def __init__(self):
+            self._log = []
+
+        def __getattr__(self, name):
+            def _dummy(self, *args, **kwargs):
+                pass
+            self._log.append(name)
+            return _dummy    
+        
+        
+    @classmethod
+    def setUpClass(cls):
+        cls._path = "/tmp/sekai"
+        cls._argv = sys.argv
+    
+    @classmethod
+    def terDownClass(cls):
+        sys.argv = cls._argv
+        
+    def setUp(self):
+        self._wrapper = self.DummyProcWrapper()
+        sys.argv = [self._argv[0]]
+        
+    def test_path(self):
+        sys.argv.append("--path=%s" % self._path)
+        parse(self._wrapper)
+        self.assertEqual(["app_run"], self._wrapper._log)
+        
+
+def parser():
+    from optparse import OptionParser
+    p = OptionParser("usage: shinku_player.py --path=game_installed")
+    p.add_option(
         "-p", 
         "--path",
         type="string",
-        help="Directory that the game installed."
+        help="directory that the game installed"
     )
-    options = parser.parse_args()[0]
+    return p
+
+def parse(wrapper):
+    p = parser()
+    options, args = p.parse_args()
     
     if options.path:
-        save({"path": options.path}, "gconfig.p")
-        logging.debug("path(%s) saved to gconfig.p" % options.path)
+        config = Config()
+        config.path = options.path
+        config.save("config.p")
     
-    gconfig = restore("gconfig.p")
-    if not gconfig:
-        parser.error("path is not given!")
+    try:
+        config = Config.restore("config.p")
+    except Exception, e:
+        logging.debug("Excepted: %s", e)
+        parser.error("Program has not enough data. The 'path' parameter never had been given to this program!")
         sys.exit()
-    path = gconfig["path"]
-    voice_path = os.path.join(path, "voice.bin")
-    script_path = os.path.join(path, "World.hcb")
-    if not os.path.isdir(path) or \
+        
+    voice_path = os.path.join(config.path, "voice.bin")
+    script_path = os.path.join(config.path, "World.hcb")
+    if not os.path.isdir(config.path) or \
        not os.path.isfile(voice_path) or \
        not os.path.isfile(script_path):
-        parser.error("'voice.bin' and 'World.hcb' is needed!")
+        parser.error("File not found. 'voice.bin' and 'World.hcb' must be in the 'path=%s'!" % config.path)
         sys.exit()
     
-    logging.info("path restored from gconfig.p: %s" % path)
-    global voice
-    global script
-    voice = Voice.restore_or_create(voice_path, "voice.p")
-    script = Script.restore_or_create(script_path, "script.p")
-    
     app.debug = True
-    app.run()
-
+    wrapper.app_run(voice_path, script_path)
+    
 if __name__ == "__main__":
-    main()
+    debug = False
+#    debug = True
+    
+    if debug:
+        unittest.main()
+    else:
+        parse(ProcWrapper())

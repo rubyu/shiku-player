@@ -3,23 +3,24 @@
 __author__="rubyu"
 __date__ ="$2011/09/20 21:01:15$"
 
+import unittest
 import logging
 import os
 import sys
-from optparse import OptionParser
-import cPickle as _pickle
 
+from restorable \
+    import Restorable
 from file_utils \
     import from_little_endian, byte_int, is_cp932_2byte_char, \
             from_cp932, pretty, byte_array
 
             
-class Script:
+class Script(Restorable):
     
-    _cls_ver = 0
+    _rest_ver = 0
     
     def __init__(self, path):
-        self._ins_ver = self._cls_ver
+        Restorable.__init__(self)
         self.path = path
         logging.debug("Script: path=%s", self.path)
         if not os.path.isfile(path):
@@ -67,20 +68,16 @@ class Script:
     
     def __setstate__(self, dict):
         self.__dict__.update(dict)
-        if self._ins_ver != self._cls_ver:
-            raise ValueError()
             
-    @classmethod
-    def restore_or_create(cls, path, dump):
-        try:
-            ins = _pickle.load(open(dump, "rb"))
-            logging.debug("Script restored from %s", dump)
-        except:
-            ins = cls(path)
-            _pickle.dump(ins, open(dump, "wb"))
-            logging.debug("Script dumped to %s", dump)
-        return ins
-    
+    def _restore_after(self):
+        if self._ins_rest_id != self._cls_rest_id():
+            raise ValueError("Restorable ID mismatch! %s != %s", 
+                self._ins_rest_id, self._cls_rest_id())
+        
+        if self._ins_rest_ver != self._cls_rest_ver():
+            raise ValueError("Restorable Version mismatch! %s != %s", 
+                self._ins_rest_ver, self._cls_rest_ver())
+                
     def _is_text(self, arr):
         u"""
         シナリオファイル内の、正しい文字列パターンであればTrueを返す。
@@ -285,34 +282,87 @@ class Script:
         """
         return from_little_endian(file[:3])
 
-def main():
-    sys.argv.append("--path=/tmp/sekai/World.hcb")
-    parser = OptionParser("usage: script_parser.py --path=to_World.hcb")
-    parser.add_option(
+
+class ProcWrapper(object):
+    
+    def print_script(self, script_file):
+        script = Script(script_file)
+        for title in script.titles:
+            for text in script.texts[title]:
+                str, name, vid = text
+                if name:
+                    print u"%s「%s」" % (name, str)
+                else:
+                    print str
+            
+
+class ParserTestCase(unittest.TestCase):
+    
+    
+    class DummyProcWrapper(object):
+
+        def __init__(self):
+            self._log = []
+
+        def __getattr__(self, name):
+            def _dummy(self, *args, **kwargs):
+                pass
+            self._log.append(name)
+            return _dummy    
+        
+        
+    @classmethod
+    def setUpClass(cls):
+        cls._path = "/tmp/sekai/World.hcb"
+        cls._argv = sys.argv
+    
+    @classmethod
+    def terDownClass(cls):
+        sys.argv = cls._argv
+        
+    def setUp(self):
+        self._wrapper = self.DummyProcWrapper()
+        sys.argv = [self._argv[0]]
+        
+    def test_path(self):
+        sys.argv.append("--path=%s" % self._path)
+        parse(self._wrapper)
+        self.assertEqual(["print_script"], self._wrapper._log)
+        
+
+def parser():
+    from optparse import OptionParser
+    p = OptionParser("usage: script_parser.py --path=to_World.hcb")
+    p.add_option(
         "-p", 
         "--path",
         type="string",
-        help="file path to World.hcb."
+        help="file path to World.hcb"
     )
-    options = parser.parse_args()[0]
-    
-    if not options.path:
-        parser.print_help()
-        sys.exit(-1)
-        
-    script = Script(options.path)
-    for title in script.titles:
-        for text in script.texts[title]:
-            str, name, vid = text
-            if name:
-                print u"%s「%s」" % (name, str)
-            else:
-                print str
+    return p
+
+def parse(wrapper):
+    p = parser()
+    options, args = p.parse_args()
+    if options.path:
+        wrapper.print_script(options.path)
+        return
+    if not debug:
+        p.print_help()
     
 if __name__ == "__main__":
+    debug = False
+#    debug = True
+    
     import sys
     import codecs
     sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
-    main()
-
     
+    if debug:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(levelname)-8s %(module)-16s %(funcName)-16s@%(lineno)d - %(message)s"
+        )
+        unittest.main()
+    else:
+        parse(ProcWrapper())
