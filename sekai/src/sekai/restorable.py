@@ -39,7 +39,8 @@ class Restorable(object):
     def __init__(self):
         self._ins_rest_id = self._cls_rest_id()
         self._ins_rest_ver = self._cls_rest_ver()
-        logging.debug("Created restorable(id=%s, ver=%s)", self._ins_rest_id, self._ins_rest_ver)
+        logging.debug("Restorable(id=%s, ver=%s) created", 
+            self._ins_rest_id, self._ins_rest_ver)
     
     def _cls_rest_id(self):
         if not hasattr(self, "_rest_id"):
@@ -56,22 +57,24 @@ class Restorable(object):
         ins = _pickle.load(open(path, "rb"))
         ins._check_rest_id()
         ins._check_rest_ver()
-        logging.debug("Restored restorable(id=%s, ver=%s) from %s", ins._ins_rest_id, ins._ins_rest_ver, path)
+        logging.debug("Restorable(id=%s, ver=%s) restored from %s", 
+            ins._ins_rest_id, ins._ins_rest_ver, path)
         return ins
     
     def _check_rest_id(self):
         if self._ins_rest_id != self._cls_rest_id():
-            raise ValueError("Restorable ID mismatch! %s != %s", 
-                self._ins_rest_id, self._cls_rest_id())
+            raise ValueError("Restorable ID mismatch! %s != %s" % 
+                (self._ins_rest_id, self._cls_rest_id()))
                 
     def _check_rest_ver(self):
         if self._ins_rest_ver != self._cls_rest_ver():
-            raise ValueError("Restorable Version mismatch! %s != %s", 
-                self._ins_rest_ver, self._cls_rest_ver())
+            raise ValueError("Restorable Version mismatch! %s != %s" % 
+                (self._ins_rest_ver, self._cls_rest_ver()))
     
     def save(self, path):
         _pickle.dump(self, open(path, "wb"))
-        logging.debug("Saved restorable(id=%s, ver=%s) to %s", self._ins_rest_id, self._ins_rest_ver, path)
+        logging.debug("Restorable(id=%s, ver=%s) saved to %s", 
+            self._ins_rest_id, self._ins_rest_ver, path)
     
 
 class Suc1(Restorable):
@@ -87,24 +90,6 @@ class Suc2(Restorable):
 
     def __init__(self):
         Restorable.__init__(self)
-        
-
-class Suc3(Restorable):
-
-    def __init__(self):
-        Restorable.__init__(self)
-
-    def _restore_after(self):
-        self._restore_after_called = True
-
-
-class Suc4(Restorable):
-
-    def __init__(self):
-        Restorable.__init__(self)
-
-    def _save_before(self):
-        self._save_before_called = True
         
         
 class ScriptTestCase(unittest.TestCase):
@@ -138,29 +123,6 @@ class ScriptTestCase(unittest.TestCase):
         self.assertEqual("hoge", suc._ins_rest_id)
         self.assertEqual(1, suc._ins_rest_ver)
             
-    def test_restore_after(self):
-        u"""
-        Restorableの子クラスが、restoreされるとき、
-        _restore_afterを持っていれば、restore後に、それがコールされる。
-        """        
-        suc = Suc3()
-        self.assert_(not hasattr(suc, "_restore_after_called"))
-        suc.save(os.path.join(self.temp_store, "test"))
-        suc = Suc3.restore(os.path.join(self.temp_store, "test"))
-        self.assert_(suc._restore_after_called)
-
-    def test_save_before(self):
-        u"""
-        Restorableの子クラスが、saveされるとき、
-        _save_beforeを持っていれば、save前に、それがコールされる。
-        """        
-        suc = Suc4()
-        self.assert_(not hasattr(suc, "_save_before_called"))
-        suc.save(os.path.join(self.temp_store, "test"))
-        self.assert_(suc._save_before_called)
-        suc = Suc3.restore(os.path.join(self.temp_store, "test"))
-        self.assert_(suc._save_before_called)
-
 
 if __name__ == "__main__":
     import os
