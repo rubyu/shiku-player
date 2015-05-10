@@ -211,7 +211,7 @@ class Script(Restorable):
                 cname = self._cid_to_cname(cid)
                 if cname:
                     text[1] = cname
-                if cname and cname != u"悠馬":
+                if cname and cname != u"悠馬": #悠馬はvidを持たない
                     j = i - 1
                     while i - 5 < j:
                         j += -1
@@ -228,7 +228,7 @@ class Script(Restorable):
                         break
                     if not text[2]:
                         logging.warning(
-                            "voice id related to '%s' was not found", text[0])
+                            "voice id relating to '%s' was not found", text[0])
                 texts.append(text)
         return texts
 
@@ -284,7 +284,7 @@ class Script(Restorable):
            0x00 == cid[3] and \
            0x00 == cid[4]:
             logging.warning(
-                "Maybe '%s' is a valid character id, but not defined in cid table", cid)
+                "Maybe '%s' is a valid character id, but not exists in cid table", cid)
             
         return ""
 
